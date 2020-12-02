@@ -1,4 +1,5 @@
 
+#include <avr/power.h>
 #include <Tiny4kOLED.h>
 
 #include "BMA400.h"
@@ -6,43 +7,63 @@
 #include "common.h"
 #include "font.h"
 
-// Whether to fill the screen with a hatch pattern instead of standard text
+// Whether to fill the screen with a hatch pattern instead of standard text.
 //#define FILL_HATCH
 
-// Whether to print current normal through serial
+// Whether to print current acceleration through serial, for calibration purposes.
+// Requires `USE_SERIAL` defined in `common.h`.
 //#define PRINT_NORMALS
 
-// Whether to keep the status LED on while not sleeping, and on which pin
+// Whether to keep the status LED on while not sleeping, and on which pin.
 #define STATUS_LED LED_BUILTIN
 
+// I2C address of the BMA400 accelerometer.
 #define BMA400_ADDRESS 0x14
+
+// Arduino pin mapped to the INT1 pin on the BMA400 accelerometer.
 #define WAKEUP_INT_PIN 2
 
-// Minimum milli-Gs of acceleration required to pick a face
-// Earth's gravity acceleration is 1024 milli-Gs
-#define MIN_G 900
+// Minimum amount of time between switching power on an OLED, in milliseconds.
+#define OLED_POWER_DEBOUNCE 100
 
-// Over this amount of millis-Gs will cancel face-picking
-#define MAX_G 1100
+// ---- Accelerometer behaviour ----
+// All acceleration units are in mibi-g, where 1024 mibi-g is equivalent to the acceleration of
+// gravity on earth.
 
-// Number of milli-Gs (actually mibi-Gs) required to wake up the accelerometer.
-#define WAKEUP_THRESHOLD 400
-
-// Amount of times per second to poll the accelerometer.
-// Note that the accelerometer might have a different internal polling rate.
-#define READ_RATE 50
+// Maximum amount of times per second to poll the accelerometer.
+// Note that this is only a maximum, since timer1 might be running at a different rate, therefore
+// not waking up the arduino on time to do exactly `READ_RATE` reads per second.
+// Additionally, the accelerometer might be operating at a different rate, and might not update
+// its acceleration values as fast as `READ_RATE`.
+#define READ_RATE 10
 
 // Size of the accelerometer rolling average buffer.
-#define ROLLAVG_LEN 8
+#define ROLLAVG_LEN 4
 
-// If rolling average deviation is over this limit, ignore readings.
-// (Unit: milli-Gs)
+// Measuring less than this acceleration will mark the measures as unreliable.
+// Unreliable measures will not send the Arduino to sleep or change the current face/orientation.
+#define MIN_ABS_ACC 974
+
+// Measuring more than this acceleration will mark the measures as unreliable.
+#define MAX_ABS_ACC 1074
+
+// If rolling average deviation is over this limit, mark the measures as unreliable.
 #define MAX_AVG_DEVIATION 20
+
+// If the acceleration component orthogonal to a face is smaller than this value, do not change
+// active face. However, the reading is still considered "reliable", and as such may send the
+// arduino to sleep.
+// This behaviour enables the device to go to sleep even if slightly tilted.
+#define MIN_FACE_ACC 940
+
+// Acceleration difference required to wake up the accelerometer and arduino after entering deep
+// sleep.
+#define WAKEUP_THRESHOLD 400
 
 #define NORMAL_COUNT 6
 #define FACE_COUNT NORMAL_COUNT * 2
 
-// Normals for each face pair, all with approximate magnitude 1024
+// Normals in accelerometer space for each face pair, all with approximate magnitude 1024.
 const PROGMEM Vec3<int> NORMALS[NORMAL_COUNT] = {
   //Orientation 0 (home)
   {4, -906, -477},
@@ -69,32 +90,33 @@ const PROGMEM byte SCREEN_ORIENTATIONS[FACE_COUNT] = {
   ORIENT_288,
 };
 
-const PROGMEM unsigned long FACE_TIMES[FACE_COUNT] = {
+const PROGMEM int FACE_TIMES[FACE_COUNT] = {
   0,
-  5*1000ul,
-  10*1000ul,
-  15*1000ul,
-  20*1000ul,
-  30*1000ul,
+  5,
+  10,
+  15,
+  20,
+  30,
   
   0,
-  1*60*1000ul,
-  2*60*1000ul,
-  3*60*1000ul,
-  4*60*1000ul,
-  5*60*1000ul,
+  1*60,
+  2*60,
+  3*60,
+  4*60,
+  5*60,
 
   /*0,
-  7*60*1000ul,
-  10*60*1000ul,
-  15*60*1000ul,
-  20*60*1000ul,
-  25*60*1000ul,*/
+  7*60,
+  10*60,
+  15*60,
+  20*60,
+  25*60,*/
 };
 
 static byte current_face = 0;
 static byte current_orient = ORIENT_000;
-static Instant timer_start = Instant();
+static Instant timer_ref = Instant();
+static int remaining_seconds = 0;
 static bool screen_on;
 static Vec3<int> rollavg_buf[ROLLAVG_LEN];
 static byte rollavg_idx = 0;
@@ -104,8 +126,7 @@ void select_screen(int screen) {
   bool enable = screen == 0;
   if (enable != screen_on) {
     unsigned long millis_debounce = last_screen_change.elapsed().as_millis();
-    const unsigned long DEBOUNCE = 100;
-    if (millis_debounce >= DEBOUNCE) {
+    if (millis_debounce < 0 || millis_debounce >= OLED_POWER_DEBOUNCE) {
       if (enable) {
         oled.on();
       }else{
@@ -117,7 +138,7 @@ void select_screen(int screen) {
   }
 }
 
-void drawScreen(int seconds, bool show) {
+static void drawScreen(int seconds, bool show) {
   #ifndef FILL_HATCH
   
   byte orient = current_orient;
@@ -166,12 +187,22 @@ void drawScreen(int seconds, bool show) {
 BlueDot_BMA400 bma400 = BlueDot_BMA400();
 
 void setup() {
+  ADCSRA = 0;
+  power_adc_disable();
+  power_spi_disable();
+  power_timer0_disable();
+  power_timer2_disable();
+
+  timekeep_init();
+
   #ifdef USE_SERIAL
   Serial.begin(115200);
+  #else
+  power_usart0_disable();
   #endif
   
   pinMode(WAKEUP_INT_PIN, INPUT);
-  attachInterrupt(digitalPinToInterrupt(WAKEUP_INT_PIN), on_wakeup, RISING);
+  attachInterrupt(digitalPinToInterrupt(WAKEUP_INT_PIN), on_accelerometer_wakeup, RISING);
   
   #ifdef STATUS_LED
   pinMode(STATUS_LED, OUTPUT);
@@ -200,13 +231,13 @@ void setup() {
   //0x09:     200 Hz
   //0x0A:     400 Hz
   //0x0B:     800 Hz
-  bma400.setOutputDataRate(0x07);
+  bma400.setOutputDataRate(0x05);
   
   //0x00:     lowest oversampling rate, lowest power consumption, lowest accuracy
   //0x01:     
   //0x02:     
   //0x03:     highest oversampling rate, highest power consumption, highest accuracy
-  bma400.setOversamplingRate(0x00);             //Choose measurement range
+  bma400.setOversamplingRate(0x00);
   
   byte bma400_id = bma400.init();
   #ifdef USE_SERIAL
@@ -339,7 +370,7 @@ void setup() {
   select_screen(0);
 }
 
-void on_wakeup() {
+static void on_accelerometer_wakeup() {
   //Do nothing
 }
 
@@ -348,16 +379,17 @@ void loop() {
   {
     //Sleep with a half eye open
     static Instant next_read = Instant();
-    Instant now = Instant();
-    if (now.gt(next_read)) {
-      next_read = now;
-    }else{
-      while(now.lt(next_read)) {
+    if (Instant().lt(next_read)) {
+      do {
         //Keeping TIMER0 on will enable timing interrupts for `millis()` and `micros()`, meaning that we will
         //be woken up even though we're using `SLEEP_FOREVER`, and timekeeping will stay precise.
-        LowPower.idle(SLEEP_FOREVER, ADC_OFF, TIMER2_OFF, TIMER1_OFF, TIMER0_ON, SPI_OFF, USART0_OFF, TWI_OFF);
-        now = Instant();
-      }
+        //Note that adc, timer0, timer2, spi and usart were already turned off at setup. The
+        //`LowPower` library is passed `_ON` values so that it doesn't turn them back on after
+        //sleeping.
+        LowPower.idle(SLEEP_FOREVER, ADC_ON, TIMER2_ON, TIMER1_ON, TIMER0_ON, SPI_ON, USART0_ON, TWI_OFF);
+      } while(Instant().lt(next_read));
+    }else{
+      next_read = Instant();
     }
     next_read = next_read.delayed_by(Duration::from_millis(1000/READ_RATE));
   }
@@ -370,52 +402,56 @@ void loop() {
   //Add current reading to the buffer
   rollavg_buf[rollavg_idx] = acc;
   rollavg_idx = (rollavg_idx + 1) % ROLLAVG_LEN;
-  //Calculate average
-  Vec3<long> avg_wide = Vec3<long>();
-  for(int i = 0; i < ROLLAVG_LEN; i += 1) {
-    avg_wide.add_mut(rollavg_buf[i].to_wide());
-  }
-  avg_wide.div_mut(ROLLAVG_LEN);
-  Vec3<int> avg = avg_wide.to_narrow();
-  //Calculate deviation
-  unsigned long distsq = 0;
-  for(int i = 0; i < ROLLAVG_LEN; i += 1) {
-    Vec3<int> dist = rollavg_buf[i];
-    dist.sub_mut(avg);
-    distsq += dist.magsq();
-  }
-  distsq /= ROLLAVG_LEN;
-  //If deviation is under an acceptable threshold, use it
+
+  //Whether the current measures can be trusted, or otherwise are just noise
   bool reliable = false;
-  if (distsq < MAX_AVG_DEVIATION*MAX_AVG_DEVIATION) {
-    //Detect upward-facing face
-    int maxdot = MIN_G;
-    sbyte active_normal = -1;
-    for(sbyte i = 0; i < NORMAL_COUNT; i += 1) {
-      Vec3<int> normal;
-      memcpy_P(&normal, NORMALS + i, sizeof(Vec3<int>));
-      int thisdot = normal.dot(avg) >> 10;
-      int dotmag = abs(thisdot);
-      if (dotmag > maxdot) {
-        active_normal = i;
-        if (thisdot < 0) {
-          active_normal += NORMAL_COUNT;
+  if (acc.magsq() >= (unsigned long) MIN_ABS_ACC*MIN_ABS_ACC && acc.magsq() <= (unsigned long) MAX_ABS_ACC*MAX_ABS_ACC) {
+    //Calculate average
+    Vec3<long> avg_wide = Vec3<long>();
+    for(int i = 0; i < ROLLAVG_LEN; i += 1) {
+      avg_wide.add_mut(rollavg_buf[i].to_wide());
+    }
+    avg_wide.div_mut(ROLLAVG_LEN);
+    Vec3<int> avg = avg_wide.to_narrow();
+
+    //Calculate deviation
+    unsigned long distsq = 0;
+    for(int i = 0; i < ROLLAVG_LEN; i += 1) {
+      Vec3<int> dist = rollavg_buf[i];
+      dist.sub_mut(avg);
+      distsq += dist.magsq();
+    }
+    distsq /= ROLLAVG_LEN;
+
+    //If deviation is under an acceptable threshold, use it
+    if (distsq < (unsigned long) MAX_AVG_DEVIATION*MAX_AVG_DEVIATION) {
+      //Detect upward-facing face
+      int maxdot = 0;
+      int8_t active_normal = -1;
+      for(int8_t i = 0; i < NORMAL_COUNT; i += 1) {
+        Vec3<int> normal;
+        memcpy_P(&normal, NORMALS + i, sizeof(Vec3<int>));
+        int thisdot = normal.dot(avg) >> 10;
+        int dotmag = abs(thisdot);
+        if (dotmag > maxdot) {
+          active_normal = i;
+          if (thisdot < 0) {
+            active_normal += NORMAL_COUNT;
+          }
+          maxdot = dotmag;
         }
-        maxdot = dotmag;
       }
-    }
-    if (maxdot > MAX_G) {
-      active_normal = -1;
-    }
-    if (active_normal != -1) {
-      reliable = true;
-      if (current_face != active_normal) {
-        //Changed face!
-        timer_start = Instant();
-        current_face = active_normal;
-        if (active_normal != 0 && active_normal != 6) {
-          // Also change screen orientation (to stay facing up)
-          current_orient = pgm_read_byte(SCREEN_ORIENTATIONS + active_normal);
+      if (active_normal != -1) {
+        reliable = true;
+        if (maxdot >= MIN_FACE_ACC && current_face != active_normal) {
+          //Changed face!
+          current_face = active_normal;
+          remaining_seconds = pgm_read_word(FACE_TIMES + current_face);
+          timer_ref = Instant();
+          if (active_normal != 0 && active_normal != 6) {
+            // Also change screen orientation (to stay facing up)
+            current_orient = pgm_read_byte(SCREEN_ORIENTATIONS + active_normal);
+          }
         }
       }
     }
@@ -426,9 +462,9 @@ void loop() {
     // Home face
     select_screen(-1);
     if (!reliable) {
-      timer_start = Instant();
+      timer_ref = Instant();
     }
-    if (timer_start.elapsed().gt(2000)) {
+    if (timer_ref.elapsed().gt(2000)) {
       //Go to sleep
 
       //Shutdown status LED
@@ -440,7 +476,9 @@ void loop() {
       bma400.setPowerMode(0x1);
 
       //Enter atmega328p deep sleep until the accelerometer interrupt wakes us up
-      LowPower.powerDown(SLEEP_FOREVER, ADC_OFF, BOD_OFF);
+      //Note that adc was already turned off at setup. The `LowPower` library is passed an `ADC_ON`
+      //value so that it doesn't turn them back on after sleeping.
+      LowPower.powerDown(SLEEP_FOREVER, ADC_ON, BOD_OFF);
 
       //Ramp up the accelerometer
       bma400.setPowerMode(0x2);
@@ -450,19 +488,26 @@ void loop() {
       digitalWrite(STATUS_LED, HIGH);
       #endif
 
-      //Wait some time before sleeping again
-      timer_start = Instant();
+      //Refresh timer reference
+      timer_ref = Instant();
     }
   }else{
     // Active face
-    long remaining = pgm_read_dword(FACE_TIMES + current_face) - timer_start.elapsed().as_millis();
+    Instant now = Instant();
+    while (now.elapsed_since(timer_ref).gt(1000)) {
+      remaining_seconds -= 1;
+      if (remaining_seconds <= -10000) {
+        remaining_seconds = remaining_seconds % 10000;
+      }
+      timer_ref = timer_ref.delayed_by(Duration::from_millis(1000));
+    }
     int display_time;
     bool show = true;
-    if (remaining < 0) {
-      display_time = remaining / -1000;
-      show = (-remaining) % 500 < 250;
+    if (remaining_seconds <= 0) {
+      display_time = -remaining_seconds;
+      show = now.elapsed_since(timer_ref).as_millis() % 500 >= 250;
     }else{
-      display_time = (remaining + 999) / 1000;
+      display_time = remaining_seconds;
     }
     drawScreen(display_time, show);
     select_screen(0);

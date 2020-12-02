@@ -4,7 +4,8 @@
 
 
 
-#define BMA400_CHIP_ID			0x90
+#define BMA400_CHIP_ID 0x90
+#define BMA400_CHIP_ID_REGISTER			0x00
 
 
 
