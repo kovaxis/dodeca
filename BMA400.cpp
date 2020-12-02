@@ -36,7 +36,7 @@ uint8_t BlueDot_BMA400::checkID(void)
 	
 }
 //##########################################################################
-void BlueDot_BMA400::setPowerMode(byte power_mode)
+void BlueDot_BMA400::setPowerMode(uint8_t power_mode)
 {
 	uint8_t reg;
 	reg = readByte(BMA400_ACC_CONFIG0);
@@ -47,7 +47,7 @@ void BlueDot_BMA400::setPowerMode(byte power_mode)
 	
 }
 //##########################################################################
-void BlueDot_BMA400::setMeasurementRange(byte range)
+void BlueDot_BMA400::setMeasurementRange(uint8_t range)
 {
 	uint8_t reg;
 	reg = readByte(BMA400_ACC_CONFIG1);
@@ -58,7 +58,7 @@ void BlueDot_BMA400::setMeasurementRange(byte range)
 	
 }
 //##########################################################################
-void BlueDot_BMA400::setOutputDataRate(byte data_rate)
+void BlueDot_BMA400::setOutputDataRate(uint8_t data_rate)
 {
 	uint8_t reg;
 	reg = readByte(BMA400_ACC_CONFIG1);
@@ -69,7 +69,7 @@ void BlueDot_BMA400::setOutputDataRate(byte data_rate)
 	
 }
 //##########################################################################
-void BlueDot_BMA400::setOversamplingRate(byte osr)
+void BlueDot_BMA400::setOversamplingRate(uint8_t osr)
 {
 	uint8_t reg;
 	reg = readByte(BMA400_ACC_CONFIG1);
@@ -131,7 +131,7 @@ void BlueDot_BMA400::readData(void)
 	Wire.beginTransmission(I2CAddress);
 	Wire.write(BMA400_ACC_X_LSB);
 	Wire.endTransmission();
-	Wire.requestFrom(I2CAddress, 6);
+	Wire.requestFrom(I2CAddress, (uint8_t) 6);
 	
 	uint8_t acc_x_lsb = Wire.read();
 	uint8_t acc_x_msb = Wire.read();
@@ -148,7 +148,7 @@ void BlueDot_BMA400::readData(void)
 //##########################################################################
 //BASIC FUNCTIONS
 //##########################################################################
-void BlueDot_BMA400::writeByte(byte reg, byte value)
+void BlueDot_BMA400::writeByte(uint8_t reg, uint8_t value)
 {
 	Wire.beginTransmission(I2CAddress);
 	Wire.write(reg);
@@ -156,13 +156,13 @@ void BlueDot_BMA400::writeByte(byte reg, byte value)
 	Wire.endTransmission();	
 }
 //##########################################################################
-uint8_t BlueDot_BMA400::readByte(byte reg)
+uint8_t BlueDot_BMA400::readByte(uint8_t reg)
 {
 	uint8_t value;
 	Wire.beginTransmission(I2CAddress);
 	Wire.write(reg);
 	Wire.endTransmission();
-	Wire.requestFrom(I2CAddress,1);		
+	Wire.requestFrom(I2CAddress, (uint8_t) 1);		
 	value = Wire.read();		
 	return value;	
 }

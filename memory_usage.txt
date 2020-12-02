@@ -1,0 +1,7 @@
+Estimated SRAM usage
+
+Wire: 216 bytes
+Serial: 177 bytes
+Tiny4KOLED: 30 bytes
+
+2x 48x48 1-bit buffers: 576 bytes

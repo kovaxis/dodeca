@@ -1,16 +1,10 @@
 
 
-#if (ARDUINO >= 100)
- #include "Arduino.h"
-#else
- #include "WProgram.h"
-#endif
-
-#include "Wire.h"
+#include <Arduino.h>
 
 
 
-#define BMA400_CHIP_ID			0x00
+#define BMA400_CHIP_ID			0x90
 
 
 
@@ -42,8 +36,8 @@ class BlueDot_BMA400
  public: 
   
   uint8_t I2CAddress;
-  int16_t raw_acc_x;  
-  int16_t raw_acc_y; 
+  int16_t raw_acc_x;
+  int16_t raw_acc_y;
   int16_t raw_acc_z;
   
   
@@ -52,10 +46,10 @@ class BlueDot_BMA400
   uint8_t init(void);
   uint8_t checkID(void);
   
-  void setPowerMode(byte power_mode);
-  void setMeasurementRange(byte range);
-  void setOutputDataRate(byte data_rate);
-  void setOversamplingRate(byte osr);
+  void setPowerMode(uint8_t power_mode);
+  void setMeasurementRange(uint8_t range);
+  void setOutputDataRate(uint8_t data_rate);
+  void setOversamplingRate(uint8_t osr);
   
   uint8_t readPowerMode();
   uint8_t readMeasurementRange();
@@ -64,8 +58,8 @@ class BlueDot_BMA400
   
   void readData();
   
-  uint8_t readByte(byte reg);
-  void writeByte(byte reg, byte value);
+  uint8_t readByte(uint8_t reg);
+  void writeByte(uint8_t reg, uint8_t value);
 
 
 };

@@ -2,6 +2,11 @@
 #ifndef COMMON_H
 #define COMMON_H
 
+#include <Arduino.h>
+
+// Whether to include and communicate through serial
+#define USE_SERIAL
+
 #include <Tiny4kOLED_common.h>
 #ifndef TINY4KOLED_H
 extern SSD1306Device oled;

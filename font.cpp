@@ -214,7 +214,9 @@ void scr_draw(int orient, int pos, int ch) {
   byte data[MAX_CAP];
   int stride = (((int)font.width) * font.height + 7) / 8;
   if (stride > MAX_CAP) {
-    Serial.println("Font size overflows char data capacity!");
+    #ifdef USE_SERIAL
+    Serial.println(F("Font size overflows char data capacity!"));
+    #endif
     for (;;) {}
   }
   #undef MAX_CAP

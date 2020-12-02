@@ -1,6 +1,5 @@
-#include <Wire.h>
+
 #include <Tiny4kOLED.h>
-#include <avr/sleep.h>
 
 #include "BMA400.h"
 #include "LowPower.h"
@@ -167,7 +166,9 @@ void drawScreen(int seconds, bool show) {
 BlueDot_BMA400 bma400 = BlueDot_BMA400();
 
 void setup() {
+  #ifdef USE_SERIAL
   Serial.begin(115200);
+  #endif
   
   pinMode(WAKEUP_INT_PIN, INPUT);
   attachInterrupt(digitalPinToInterrupt(WAKEUP_INT_PIN), on_wakeup, RISING);
@@ -207,12 +208,15 @@ void setup() {
   //0x03:     highest oversampling rate, highest power consumption, highest accuracy
   bma400.setOversamplingRate(0x00);             //Choose measurement range
   
+  byte bma400_id = bma400.init();
+  #ifdef USE_SERIAL
   Serial.print(F("Communication with BMA400:\t"));
-  if (bma400.init()==0x90) {
+  if (bma400_id == BMA400_CHIP_ID) {
     Serial.println(F("Successful"));   
   } else {
     Serial.println(F("Failed"));
   }
+  #endif
 
   // AUTOWAKEUP_0: AAAA AAAA
   //  - A: Wakeup timeout MSB
@@ -254,6 +258,7 @@ void setup() {
   //  - D: Active level for INT1
   bma400.writeByte(0x24, 0b00000010);
   
+  #ifdef USE_SERIAL
   Serial.print(F("Reading Power Mode:\t\t"));
   uint8_t powerMode = bma400.readPowerMode();
   switch(powerMode) {
@@ -309,9 +314,6 @@ void setup() {
     case 11:
       Serial.println(F("800Hz"));
       break;
-    default:
-      Serial.println(outputDataRate);
-      break;
   }
   
   Serial.print(F("Reading Oversampling Range:\t"));
@@ -330,6 +332,7 @@ void setup() {
       Serial.println(F("OSR 3"));
       break;
   }
+  #endif
   
   oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
   oled.fill(0);
@@ -340,12 +343,11 @@ void on_wakeup() {
   //Do nothing
 }
 
-static Instant next_read = Instant();
-static Instant last_read = Instant();
 void loop() {
   //Throttle reads
   {
     //Sleep with a half eye open
+    static Instant next_read = Instant();
     Instant now = Instant();
     if (now.gt(next_read)) {
       next_read = now;
@@ -469,12 +471,14 @@ void loop() {
   //Debug-print current accelerometer readings for face normal calibration
   #ifdef PRINT_NORMALS
   
+  #ifdef USE_SERIAL
   Serial.print(bma400.raw_acc_x);
   Serial.print(F(", "));
   Serial.print(bma400.raw_acc_y);
   Serial.print(F(", "));
   Serial.print(bma400.raw_acc_z);
   Serial.println();
+  #endif
   
   #endif
 }
