@@ -30,6 +30,7 @@ static const DCfont *oledFont = 0;
 static uint8_t oledX = 0, oledY = 0;
 static uint8_t renderingFrame = 0xB0, drawingFrame = 0x40;
 static uint8_t invertedOutput = 0;
+static bool screenOn = false;
 
 static void (*wireBeginFn)(void);
 static bool (*wireBeginTransmissionFn)(void);
@@ -481,11 +482,30 @@ void SSD1306Device::setInternalIref(bool bright)
 
 void SSD1306Device::off(void)
 {
+	if (!screenOn)
+	{
+		return;
+	}
+	forceOff();
+}
+
+void SSD1306Device::forceOff(void)
+{
+	screenOn = false;
 	ssd1306_send_command(0xAE);
 }
 
 void SSD1306Device::on(void)
 {
+	if (screenOn)
+	{
+		return;
+	}
+	forceOn();
+}
+void SSD1306Device::forceOn(void)
+{
+	screenOn = true;
 	ssd1306_send_command(0xAF);
 }
 

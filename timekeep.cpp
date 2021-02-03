@@ -9,6 +9,8 @@ unsigned int _millis_counter = 0xe800;
 static void on_periodic()
 {
     _millis_counter += TIMER_PERIOD;
+    digitalWrite(DEBUG_LED, LOW);
+    digitalWrite(DEBUG_LED, HIGH);
 }
 
 void timekeep_init()

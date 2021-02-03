@@ -23,6 +23,18 @@ typedef struct
     const byte *data;
 } Font;
 
+typedef struct
+{
+    // Dimensions of the sprite.
+    byte width;
+    byte height;
+    // Default position of the sprite.
+    byte default_x;
+    byte default_y;
+    // Pointer to sprite data in PROGMEM
+    const byte *data;
+} Sprite;
+
 const PROGMEM Font FONT_00 = {
     // Width, height
     8,
@@ -75,6 +87,14 @@ const PROGMEM Font FONT_45 = {
     // Characters: "0123456789:" (11*2 characters)
     // Character dimensions: 14x14 (25 bytes each)
     FONT_45_DATA,
+};
+
+const PROGMEM Sprite LOWBAT_SPRITE = {
+    29,
+    16,
+    10,
+    16,
+    LOWBAT_DATA,
 };
 
 static byte buffer_mem[2 * SCRBUF_WIDTH * SCRBUF_PAGES];
@@ -153,8 +173,13 @@ void draw_upsidedown(int width, int height, int base_x, int base_y, const byte *
     }
 }
 
-void scr_lowbat(int orient)
+void scr_draw_lowbat(int orient)
 {
+    Sprite sprite;
+    byte data[100];
+    memcpy_P(&sprite, &LOWBAT_SPRITE, sizeof(Sprite));
+    memcpy_P(data, sprite.data, (((int)sprite.width) * sprite.height + 7) / 8);
+    draw_upright(sprite.width, sprite.height, sprite.default_x, sprite.default_y, data);
 }
 
 void scr_draw(int orient, int pos, int ch)
@@ -194,7 +219,7 @@ void scr_draw(int orient, int pos, int ch)
     int base_x = font.positions[pos * 2];
     int base_y = font.positions[pos * 2 + 1];
 
-//Get character data
+    //Get character data
 #define MAX_CAP 64
     byte data[MAX_CAP];
     int stride = (((int)font.width) * font.height + 7) / 8;

@@ -96,7 +96,7 @@ const int BLINK_PERIOD = 500;
 
 // How much of the blink period to hide the numbers. In practice, clamped to the next multiple of
 // TIMER_PERIOD.
-const int BLINK_OFFTIME = 250;
+const int BLINK_OFFTIME = 100;
 
 // ---- Debug options ----
 
@@ -118,17 +118,35 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 // Whether to keep the status LED on while not sleeping, and on which pin.
 #define DEBUG_LED LED_BUILTIN
 
-// Battery settings
+// ---- Battery settings ----
 
+// What battery voltage to consider "low".
 const float BATTERY_LOW_VOLTAGE = 3.4;
 
+// The resistance of the first resistor in the voltage divider (wiring to the battery).
+// The unit does not matter as long as it's consistent with `BATTERY_DIV_R2`.
 const float BATTERY_DIV_R1 = 4.7;
+// The resistance of the second resistor in the voltage divider (wiring to ground).
 const float BATTERY_DIV_R2 = 4.7;
+// The ADC reference voltage in use.
+const float BATTERY_REFERENCE_VOLTAGE = 3.3;
+// For how many microseconds to read the battery voltage.
+// Reading for too little time will result in poor readings if using high resistances.
+const long BATTERY_READ_MICROS = 1000;
+
+// Intermediate value.
 const float BATTERY_V_SCALE_RATIO = BATTERY_DIV_R2 / (BATTERY_DIV_R1 + BATTERY_DIV_R2);
+// The ADC raw value to consider as "low battery" (in the range [0, 1023]).
+const int BATTERY_LOW_THRESHOLD = (int)(BATTERY_LOW_VOLTAGE * BATTERY_V_SCALE_RATIO / BATTERY_REFERENCE_VOLTAGE * 1024);
 
-const int BATTERY_LOW_THRESHOLD = ((int)(BATTERY_LOW_VOLTAGE * BATTERY_V_SCALE_RATIO / 3.3 * 1024));
+// For how many frames to display the "low battery" icon.
+const int LOW_BATTERY_FRAMES = 56;
 
-const int LOW_BATTERY_FRAMES = 10;
+// The low battery blink period in frames.
+const int LOW_BATTERY_BLINK_PERIOD = 8;
+
+// For how many frames to keep the battery icon on.
+const int LOW_BATTERY_BLINK_ONFRAMES = 6;
 
 // ---- Face properties ----
 

@@ -48,7 +48,10 @@ class Instant
 public:
     Instant()
     {
+        //Make sure the counter is not incremented while the time is being copied
+        noInterrupts();
         this->_millis = _millis_counter;
+        interrupts();
     }
 
     Duration elapsed()

@@ -94,7 +94,9 @@ public:
 	void setInverse(bool enable);
 	void setExternalIref(void);
 	void setInternalIref(bool bright);
+	void forceOff(void);
 	void off(void);
+	void forceOn(void);
 	void on(void);
 
 	// 2. Scrolling Command Table

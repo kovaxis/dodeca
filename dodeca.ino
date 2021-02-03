@@ -7,6 +7,13 @@
 #include "LowPower.h"
 #include "screen.h"
 
+#ifndef cbi
+#define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
+#endif
+#ifndef sbi
+#define sbi(sfr, bit) (_SFR_BYTE(sfr) |= _BV(bit))
+#endif
+
 static byte current_face = 0;
 static byte current_orient = ORIENT_000;
 static Instant timer_ref = Instant();
@@ -25,7 +32,7 @@ void select_screen(int screen)
         {
             if (SSD1306 != 0)
             {
-                oled.off();
+                oled.forceOff();
             }
             SSD1306 = screen;
             if (screen != 0)
@@ -33,7 +40,7 @@ void select_screen(int screen)
                 scr_clear();
                 scr_force_swap();
                 oled.fill(0);
-                oled.on();
+                oled.forceOn();
             }
             last_screen_change = Instant();
         }
@@ -58,9 +65,26 @@ static void drawScreen(int seconds, bool show)
     return;
 #endif
 
+    byte orient = current_orient;
+
     if (low_battery_frames != -1)
     {
         //Draw low battery indicator instead of the normal timer
+        if (low_battery_frames == 0)
+        {
+            scr_clear();
+            scr_draw_lowbat(orient);
+            scr_show();
+        }
+
+        if (low_battery_frames % LOW_BATTERY_BLINK_PERIOD < LOW_BATTERY_BLINK_ONFRAMES)
+        {
+            oled.on();
+        }
+        else
+        {
+            oled.off();
+        }
 
         //Advance low battery frame animation
         low_battery_frames += 1;
@@ -68,10 +92,9 @@ static void drawScreen(int seconds, bool show)
         {
             low_battery_frames = -1;
         }
+
         return;
     }
-
-    byte orient = current_orient;
 
     static int last_seconds = -1;
     static bool last_show = false;
@@ -87,9 +110,10 @@ static void drawScreen(int seconds, bool show)
         last_orient = orient;
     }
 
-    scr_clear();
     if (show)
     {
+        oled.on();
+        scr_clear();
         int time = seconds;
         scr_draw(orient, 4, time % 10);
         time /= 10;
@@ -99,8 +123,12 @@ static void drawScreen(int seconds, bool show)
         scr_draw(orient, 1, time % 10);
         time /= 10;
         scr_draw(orient, 0, time % 10);
+        scr_show();
     }
-    scr_show();
+    else
+    {
+        oled.off();
+    }
 }
 
 BlueDot_BMA400 bma400 = BlueDot_BMA400(BMA400_ADDRESS);
@@ -239,10 +267,12 @@ void setup()
     }
 #endif
 
+    // Initialize low screen
     SSD1306 = SSD1306_LOW;
     oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
     oled.fill(0);
 
+    // Initialize high screen
     SSD1306 = SSD1306_HIGH;
     oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
     oled.fill(0);
@@ -267,9 +297,9 @@ static void face_to_normal(byte face, Vec3<int> *normal)
         normal->mul_mut(-1);
     }
 }
-/*
-// Taken from the Arduino source for `analogRead`.
-void select_adc_pin(uint8_t pin)
+
+// Taken from the Arduino source for `analogRead` from `wiring_analog.c`.
+static void select_adc_pin(uint8_t pin)
 {
 #if defined(analogPinToChannel)
 #if defined(__AVR_ATmega32U4__)
@@ -300,6 +330,7 @@ void select_adc_pin(uint8_t pin)
     // set the analog reference (high two bits of ADMUX) and select the
     // channel (low 4 bits).  this also sets ADLAR (left-adjust result)
     // to 0 (the default).
+    uint8_t analog_reference = DEFAULT;
 #if defined(ADMUX)
 #if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
     ADMUX = (analog_reference << 4) | (pin & 0x07);
@@ -309,14 +340,15 @@ void select_adc_pin(uint8_t pin)
 #endif
 }
 
-// Taken from the Arduino source for `analogRead`.
+// Taken from the Arduino source for `analogRead` from `wiring_analog.c`.
 // Carry out ADC conversion from a pin selected by `select_adc_pin`.
-int analog_read()
+// The idea is to sleep for a millisecond or some other arbitrary period of time between calls to
+// `select_adc_pin` and `analog_read`, allowing current flow into the ADC even through heavy
+// resistances.
+static int analog_read()
 {
     uint8_t low, high;
 
-    // Sleep here for a millisecond, allowing current flow into the ADC even through heavy
-    // impedance
 #if defined(ADCSRA) && defined(ADCL)
     // start the conversion
     sbi(ADCSRA, ADSC);
@@ -342,26 +374,44 @@ int analog_read()
     return (high << 8) | low;
 }
 
-bool check_battery()
+static bool check_battery()
 {
+    unsigned long start;
     //Enable the ADC and select the battery channel
-    ADCSRA = 0x80;
+    //It is important to first call `power_adc_enable` and _then_ set the ADCSRA.ADEN bit.
     power_adc_enable();
+    ADCSRA = 0x80;
+
+    //Do a warmup read, since the first read after the ADC powers on is an extended read and may
+    //not be accurate.
+    select_adc_pin(BATTERY_VOLTAGE_PIN);
+    analog_read();
+
+    //Start real read
     select_adc_pin(BATTERY_VOLTAGE_PIN);
 
-    //Wait some time for the voltage to go through the thick impedance
-    unsigned long start = micros();
+    //Wait some time for the voltage to spread through the thick impedance
     power_timer0_enable();
+    start = micros();
     do
     {
-        LowPower.idle();
-    } while ((long)(micros() - start) < 1000000);
+        LowPower.idle(SLEEP_FOREVER, ADC_ON, TIMER2_ON, TIMER1_ON, TIMER0_ON, SPI_ON, USART0_ON, TWI_OFF);
+    } while ((long)(micros() - start) < BATTERY_READ_MICROS);
     power_timer0_disable();
 
-    //Carry out conversion
+    //Carry out conversion and disable ADC
     int voltage = analog_read();
-    return voltage <= LOW_BATTERY_THRESHOLD;
-}*/
+    ADCSRA = 0x00;
+    power_adc_disable();
+
+#ifdef DEBUG_SERIAL
+    float actual_voltage = ((float)voltage + 0.5) / 1024. * BATTERY_REFERENCE_VOLTAGE / BATTERY_V_SCALE_RATIO;
+    Serial.print(F("Battery voltage: "));
+    Serial.print(actual_voltage);
+    Serial.println(F("V"));
+#endif
+    return voltage <= BATTERY_LOW_THRESHOLD;
+}
 
 static bool change_face(const Vec3<int> &acc)
 {
@@ -471,7 +521,10 @@ static bool change_face(const Vec3<int> &acc)
         // Also change screen orientation (to stay facing up)
         current_orient = pgm_read_byte(SCREEN_ORIENTATIONS + active_normal);
         // Also check battery
-        //check_battery();
+        if (check_battery())
+        {
+            low_battery_frames = 0;
+        }
     }
     current_face = active_normal;
     return true;
@@ -563,6 +616,7 @@ static void deep_sleep(Vec3<int> &cur_acc)
 
 void loop()
 {
+
     //Throttle reads
     {
 //Sleep with a half eye open
