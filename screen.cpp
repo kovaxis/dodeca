@@ -2,7 +2,7 @@
 #include "screen.h"
 #include "bitmaps.h"
 
-#include <Tiny4kOLED_common.h>
+#include "T4K/T4K_common.h"
 extern SSD1306Device oled;
 
 #define CHAR_COUNT 11
@@ -153,6 +153,10 @@ void draw_upsidedown(int width, int height, int base_x, int base_y, const byte *
     }
 }
 
+void scr_lowbat(int orient)
+{
+}
+
 void scr_draw(int orient, int pos, int ch)
 {
     //Pick rotation based on `orient`
@@ -288,6 +292,24 @@ void scr_show()
             oled.endData();
         }
     }
+
+    //Swap buffer
+    front_buffer = backbuf;
+}
+
+void scr_force_swap()
+{
+    //Find backbuffer
+    byte *backbuf;
+    if (front_buffer == buffer_mem)
+    {
+        backbuf = buffer_mem + SCRBUF_WIDTH * SCRBUF_PAGES;
+    }
+    else
+    {
+        backbuf = buffer_mem;
+    }
+
     //Swap buffer
     front_buffer = backbuf;
 }

@@ -1,7 +1,7 @@
 
 #include "common.h"
 #include <avr/power.h>
-#include <Tiny4kOLED.h>
+#include "T4K/T4K.h"
 
 #include "BMA400.h"
 #include "LowPower.h"
@@ -11,29 +11,31 @@ static byte current_face = 0;
 static byte current_orient = ORIENT_000;
 static Instant timer_ref = Instant();
 static int remaining_seconds = 0;
-static bool screen_on;
 static Vec3<int> rollavg_buf[ROLLAVG_LEN];
 static byte rollavg_idx = 0;
+static int low_battery_frames = -1;
 
 void select_screen(int screen)
 {
     static Instant last_screen_change = Instant();
-    bool enable = screen == 0;
-    if (enable != screen_on)
+    if (screen != SSD1306)
     {
         unsigned long millis_debounce = last_screen_change.elapsed().as_millis();
         if (millis_debounce < 0 || millis_debounce >= OLED_POWER_DEBOUNCE)
         {
-            if (enable)
-            {
-                oled.on();
-            }
-            else
+            if (SSD1306 != 0)
             {
                 oled.off();
             }
+            SSD1306 = screen;
+            if (screen != 0)
+            {
+                scr_clear();
+                scr_force_swap();
+                oled.fill(0);
+                oled.on();
+            }
             last_screen_change = Instant();
-            screen_on = enable;
         }
     }
 }
@@ -55,6 +57,19 @@ static void drawScreen(int seconds, bool show)
     }
     return;
 #endif
+
+    if (low_battery_frames != -1)
+    {
+        //Draw low battery indicator instead of the normal timer
+
+        //Advance low battery frame animation
+        low_battery_frames += 1;
+        if (low_battery_frames >= LOW_BATTERY_FRAMES)
+        {
+            low_battery_frames = -1;
+        }
+        return;
+    }
 
     byte orient = current_orient;
 
@@ -92,15 +107,22 @@ BlueDot_BMA400 bma400 = BlueDot_BMA400(BMA400_ADDRESS);
 
 void setup()
 {
+    //select_adc_pin(BATTERY_VOLTAGE_PIN);
     //Switch off analog comparator
     ACSR = 0x80;
     //Switch off analog-to-digital
     ADCSRA = 0;
+    //Switch off digital pin input buffers
+    DIDR0 = 0b00111111;
+    DIDR1 = 0b00000011;
     //Switch off unused modules
     power_adc_disable();
     power_spi_disable();
-    //power_timer0_disable();
     power_timer2_disable();
+
+#ifndef DEBUG_PROFILE_IDLE
+    power_timer0_disable();
+#endif
 
     timekeep_init();
 
@@ -217,8 +239,14 @@ void setup()
     }
 #endif
 
+    SSD1306 = SSD1306_LOW;
     oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
     oled.fill(0);
+
+    SSD1306 = SSD1306_HIGH;
+    oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
+    oled.fill(0);
+
     select_screen(0);
 }
 
@@ -239,6 +267,101 @@ static void face_to_normal(byte face, Vec3<int> *normal)
         normal->mul_mut(-1);
     }
 }
+/*
+// Taken from the Arduino source for `analogRead`.
+void select_adc_pin(uint8_t pin)
+{
+#if defined(analogPinToChannel)
+#if defined(__AVR_ATmega32U4__)
+    if (pin >= 18)
+        pin -= 18; // allow for channel or pin numbers
+#endif
+    pin = analogPinToChannel(pin);
+#elif defined(__AVR_ATmega1280__) || defined(__AVR_ATmega2560__)
+    if (pin >= 54)
+        pin -= 54; // allow for channel or pin numbers
+#elif defined(__AVR_ATmega32U4__)
+    if (pin >= 18)
+        pin -= 18; // allow for channel or pin numbers
+#elif defined(__AVR_ATmega1284__) || defined(__AVR_ATmega1284P__) || defined(__AVR_ATmega644__) || defined(__AVR_ATmega644A__) || defined(__AVR_ATmega644P__) || defined(__AVR_ATmega644PA__)
+    if (pin >= 24)
+        pin -= 24; // allow for channel or pin numbers
+#else
+    if (pin >= 14)
+        pin -= 14; // allow for channel or pin numbers
+#endif
+
+#if defined(ADCSRB) && defined(MUX5)
+    // the MUX5 bit of ADCSRB selects whether we're reading from channels
+    // 0 to 7 (MUX5 low) or 8 to 15 (MUX5 high).
+    ADCSRB = (ADCSRB & ~(1 << MUX5)) | (((pin >> 3) & 0x01) << MUX5);
+#endif
+
+    // set the analog reference (high two bits of ADMUX) and select the
+    // channel (low 4 bits).  this also sets ADLAR (left-adjust result)
+    // to 0 (the default).
+#if defined(ADMUX)
+#if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
+    ADMUX = (analog_reference << 4) | (pin & 0x07);
+#else
+    ADMUX = (analog_reference << 6) | (pin & 0x07);
+#endif
+#endif
+}
+
+// Taken from the Arduino source for `analogRead`.
+// Carry out ADC conversion from a pin selected by `select_adc_pin`.
+int analog_read()
+{
+    uint8_t low, high;
+
+    // Sleep here for a millisecond, allowing current flow into the ADC even through heavy
+    // impedance
+#if defined(ADCSRA) && defined(ADCL)
+    // start the conversion
+    sbi(ADCSRA, ADSC);
+
+    // ADSC is cleared when the conversion finishes
+    while (bit_is_set(ADCSRA, ADSC))
+    {
+    }
+
+    // we have to read ADCL first; doing so locks both ADCL
+    // and ADCH until ADCH is read.  reading ADCL second would
+    // cause the results of each conversion to be discarded,
+    // as ADCL and ADCH would be locked when it completed.
+    low = ADCL;
+    high = ADCH;
+#else
+    // we dont have an ADC, return 0
+    low = 0;
+    high = 0;
+#endif
+
+    // combine the two bytes
+    return (high << 8) | low;
+}
+
+bool check_battery()
+{
+    //Enable the ADC and select the battery channel
+    ADCSRA = 0x80;
+    power_adc_enable();
+    select_adc_pin(BATTERY_VOLTAGE_PIN);
+
+    //Wait some time for the voltage to go through the thick impedance
+    unsigned long start = micros();
+    power_timer0_enable();
+    do
+    {
+        LowPower.idle();
+    } while ((long)(micros() - start) < 1000000);
+    power_timer0_disable();
+
+    //Carry out conversion
+    int voltage = analog_read();
+    return voltage <= LOW_BATTERY_THRESHOLD;
+}*/
 
 static bool change_face(const Vec3<int> &acc)
 {
@@ -329,12 +452,26 @@ static bool change_face(const Vec3<int> &acc)
     }
 
     //Changed face!
-    remaining_seconds = pgm_read_word(FACE_TIMES + active_normal);
+    int face_time = pgm_read_word(FACE_TIMES + active_normal);
+    if (face_time == 0)
+    {
+        remaining_seconds = 0;
+    }
+    else
+    {
+        if (remaining_seconds < 0)
+        {
+            remaining_seconds = 0;
+        }
+        remaining_seconds += face_time;
+    }
     timer_ref = Instant();
     if (active_normal != 0 && active_normal != NORMAL_COUNT)
     {
         // Also change screen orientation (to stay facing up)
         current_orient = pgm_read_byte(SCREEN_ORIENTATIONS + active_normal);
+        // Also check battery
+        //check_battery();
     }
     current_face = active_normal;
     return true;
@@ -424,16 +561,6 @@ static void deep_sleep(Vec3<int> &cur_acc)
     timer_ref = Instant();
 }
 
-/*
-bool check_battery()
-{
-    //TODO: Figure out how to measure
-    ADCSRA = 0x80;
-    power_adc_enable();
-    analogRead(BATTERY_CHECK_PIN);
-}
-*/
-
 void loop()
 {
     //Throttle reads
@@ -468,7 +595,6 @@ void loop()
                 //The `LowPower` library is passed `_ON` values so that it doesn't turn them back
                 //on after sleeping.
                 LowPower.idle(SLEEP_FOREVER, ADC_ON, TIMER2_ON, TIMER1_ON, TIMER0_ON, SPI_ON, USART0_ON, TWI_OFF);
-
             } while (Instant().lt(next_read));
 #ifdef DEBUG_PROFILE_IDLE
             unsigned long after_idle = micros();
@@ -499,7 +625,7 @@ void loop()
     if (current_face == 0 || current_face == NORMAL_COUNT)
     {
         // Home face
-        select_screen(-1);
+        select_screen(0);
         if (!reliable)
         {
             timer_ref = Instant();
@@ -534,8 +660,15 @@ void loop()
         {
             display_time = remaining_seconds;
         }
+        if (current_face < NORMAL_COUNT)
+        {
+            select_screen(SSD1306_LOW);
+        }
+        else
+        {
+            select_screen(SSD1306_HIGH);
+        }
         drawScreen(display_time, show);
-        select_screen(0);
     }
 
     //Debug-print current accelerometer readings for face normal calibration
