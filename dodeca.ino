@@ -22,6 +22,10 @@ static Vec3<int> rollavg_buf[ROLLAVG_LEN];
 static byte rollavg_idx = 0;
 static int low_battery_frames = -1;
 
+#ifdef DISPLAY_VOLTAGE_ON_SCREEN
+static int battery_display_voltage = 0;
+#endif
+
 void select_screen(int screen)
 {
     static Instant last_screen_change = Instant();
@@ -114,6 +118,16 @@ static void drawScreen(int seconds, bool show)
     {
         oled.on();
         scr_clear();
+#ifdef DISPLAY_VOLTAGE_ON_SCREEN
+        int voltage = battery_display_voltage;
+        scr_draw(orient, 4, voltage % 10);
+        voltage /= 10;
+        scr_draw(orient, 3, voltage % 10);
+        voltage /= 10;
+        scr_draw(orient, 1, voltage % 10);
+        voltage /= 10;
+        scr_draw(orient, 0, voltage % 10);
+#else
         int time = seconds;
         scr_draw(orient, 4, time % 10);
         time /= 10;
@@ -123,6 +137,7 @@ static void drawScreen(int seconds, bool show)
         scr_draw(orient, 1, time % 10);
         time /= 10;
         scr_draw(orient, 0, time % 10);
+#endif
         scr_show();
     }
     else
@@ -159,6 +174,9 @@ void setup()
 #else
     power_usart0_disable();
 #endif
+
+    //Disable pull-up on RX pin, since when the USB2SERIAL chip is off its TX pin is at 0V
+    digitalWrite(0, LOW);
 
     pinMode(WAKEUP_INT_PIN, INPUT);
     attachInterrupt(digitalPinToInterrupt(WAKEUP_INT_PIN), on_accelerometer_wakeup, RISING);
@@ -330,7 +348,7 @@ static void select_adc_pin(uint8_t pin)
     // set the analog reference (high two bits of ADMUX) and select the
     // channel (low 4 bits).  this also sets ADLAR (left-adjust result)
     // to 0 (the default).
-    uint8_t analog_reference = DEFAULT;
+    uint8_t analog_reference = INTERNAL;
 #if defined(ADMUX)
 #if defined(__AVR_ATtiny25__) || defined(__AVR_ATtiny45__) || defined(__AVR_ATtiny85__)
     ADMUX = (analog_reference << 4) | (pin & 0x07);
@@ -387,6 +405,8 @@ static bool check_battery()
     select_adc_pin(BATTERY_VOLTAGE_PIN);
     analog_read();
 
+    delayMicroseconds(70);
+
     //Start real read
     select_adc_pin(BATTERY_VOLTAGE_PIN);
 
@@ -404,11 +424,16 @@ static bool check_battery()
     ADCSRA = 0x00;
     power_adc_disable();
 
-#ifdef DEBUG_SERIAL
+#if defined(DEBUG_SERIAL) || defined(DISPLAY_VOLTAGE_ON_SCREEN)
     float actual_voltage = ((float)voltage + 0.5) / 1024. * BATTERY_REFERENCE_VOLTAGE / BATTERY_V_SCALE_RATIO;
+#ifdef DEBUG_SERIAL
     Serial.print(F("Battery voltage: "));
     Serial.print(actual_voltage);
     Serial.println(F("V"));
+#endif
+#ifdef DISPLAY_VOLTAGE_ON_SCREEN
+    battery_display_voltage = actual_voltage * 100.;
+#endif
 #endif
     return voltage <= BATTERY_LOW_THRESHOLD;
 }
@@ -708,11 +733,16 @@ void loop()
         if (remaining_seconds <= 0)
         {
             display_time = -remaining_seconds;
-            show = now.elapsed_since(timer_ref).as_millis() % BLINK_PERIOD >= BLINK_OFFTIME;
+            show = now.elapsed_since(timer_ref).as_millis() % ALARM_BLINK_PERIOD >= ALARM_BLINK_OFFTIME;
         }
         else
         {
             display_time = remaining_seconds;
+            show = now.elapsed_since(timer_ref).as_millis() % COUNTDOWN_BLINK_PERIOD >= COUNTDOWN_BLINK_OFFTIME;
+        }
+        if (display_time >= 3600)
+        {
+            display_time /= 60;
         }
         if (current_face < NORMAL_COUNT)
         {

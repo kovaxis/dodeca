@@ -90,18 +90,26 @@ const int SCRBUF_PAGES = 6;
 // Minimum amount of time between switching power on an OLED, in milliseconds.
 const int OLED_POWER_DEBOUNCE = 100;
 
-// Blinking period. Should be a divisor of 1000. In practice, clamped to the next multiple of
-// TIMER_PERIOD.
-const int BLINK_PERIOD = 500;
+// Blinking period while counting down. Should be a divisor of 1000. In practice, clamped to the
+// next multiple of TIMER_PERIOD.
+const int COUNTDOWN_BLINK_PERIOD = 1000;
 
 // How much of the blink period to hide the numbers. In practice, clamped to the next multiple of
 // TIMER_PERIOD.
-const int BLINK_OFFTIME = 100;
+const int COUNTDOWN_BLINK_OFFTIME = 0;
+
+// Blinking period once the countdown has finished and the alarm is ringing. Should be a divisor of
+// 1000. In practice, clamped to the next multiple of TIMER_PERIOD.
+const int ALARM_BLINK_PERIOD = 500;
+
+// How much of the blink period to hide the numbers. In practice, clamped to the next multiple of
+// TIMER_PERIOD.
+const int ALARM_BLINK_OFFTIME = 100;
 
 // ---- Debug options ----
 
 // Whether to include and activate the Serial library and send debug messages through it.
-//#define DEBUG_SERIAL
+#define DEBUG_SERIAL
 
 // Whether to profile the active/idle times and report them back through serial once a second.
 //#define DEBUG_PROFILE_IDLE
@@ -116,7 +124,10 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 //#define DEBUG_PRINT_NORMALS
 
 // Whether to keep the status LED on while not sleeping, and on which pin.
-#define DEBUG_LED LED_BUILTIN
+//#define DEBUG_LED LED_BUILTIN
+
+// Whether to display the measured battery voltage on screen instead of the current time.
+#define DISPLAY_VOLTAGE_ON_SCREEN
 
 // ---- Battery settings ----
 
@@ -127,9 +138,9 @@ const float BATTERY_LOW_VOLTAGE = 3.4;
 // The unit does not matter as long as it's consistent with `BATTERY_DIV_R2`.
 const float BATTERY_DIV_R1 = 4.7;
 // The resistance of the second resistor in the voltage divider (wiring to ground).
-const float BATTERY_DIV_R2 = 4.7;
+const float BATTERY_DIV_R2 = 1.;
 // The ADC reference voltage in use.
-const float BATTERY_REFERENCE_VOLTAGE = 3.3;
+const float BATTERY_REFERENCE_VOLTAGE = 1.1;
 // For how many microseconds to read the battery voltage.
 // Reading for too little time will result in poor readings if using high resistances.
 const long BATTERY_READ_MICROS = 1000;
