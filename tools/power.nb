@@ -1,0 +1,307 @@
+(* Content-type: application/vnd.wolfram.mathematica *)
+
+(*** Wolfram Notebook File ***)
+(* http://www.wolfram.com/nb *)
+
+(* CreatedBy='Mathematica 12.1' *)
+
+(*CacheID: 234*)
+(* Internal cache information:
+NotebookFileLineBreakTest
+NotebookFileLineBreakTest
+NotebookDataPosition[       158,          7]
+NotebookDataLength[     13076,        297]
+NotebookOptionsPosition[     12085,        273]
+NotebookOutlinePosition[     12485,        289]
+CellTagsIndexPosition[     12442,        286]
+WindowFrame->Normal*)
+
+(* Beginning of Notebook Content *)
+Notebook[{
+
+Cell[CellGroupData[{
+Cell[BoxData[
+ RowBox[{
+  RowBox[{"(*", " ", 
+   RowBox[{"Units", " ", "are", " ", "all", " ", "microamps"}], " ", "*)"}], 
+  "\[IndentingNewLine]", 
+  RowBox[{
+   RowBox[{
+    RowBox[{"oled", "=", "2010"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"oledSleep", "=", "20"}], ";", 
+    RowBox[{"(*", " ", "fixable", " ", "*)"}], "\[IndentingNewLine]", 
+    RowBox[{"arduinoActive", "=", "3000"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"arduinoIdle", "=", "500"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"arduinoSleep", "=", "0.15"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"arduinoIdleRatio", "=", 
+     RowBox[{"965024", "/", 
+      RowBox[{"(", 
+       RowBox[{"965024", "+", "34976"}], ")"}]}]}], ";", 
+    RowBox[{"(*", " ", "improvable", " ", "*)"}], "\[IndentingNewLine]", 
+    RowBox[{"accActive", "=", "14.5"}], ";", 
+    RowBox[{"(*", " ", "improvable", " ", "*)"}], "\[IndentingNewLine]", 
+    RowBox[{"accLowPower", "=", ".8"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"extraConstant", "=", "40"}], ";", 
+    RowBox[{"(*", " ", "unknown", " ", "*)"}], "\[IndentingNewLine]", 
+    RowBox[{"activeMinutesPerDay", "=", "30"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"batterymAh", "=", "1000"}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"selfDischarge", "=", "0.03"}], ";"}], "\[IndentingNewLine]", 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", " ", 
+    RowBox[{
+    "estimated", " ", "values", " ", "if", " ", "the", " ", "arduino", " ", 
+     "is", " ", "run", " ", "at", " ", "1", "MHz"}], " ", "*)"}], 
+   "\[IndentingNewLine]", 
+   RowBox[{"(*", "\[IndentingNewLine]", 
+    RowBox[{
+     RowBox[{"arduinoIdleRatio", "=", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"965024", "+", "34976", "-", 
+         RowBox[{"34976", "*", "16"}]}], ")"}], "/", 
+       RowBox[{"(", 
+        RowBox[{"965024", "+", "34976"}], ")"}]}]}], ";", 
+     "\[IndentingNewLine]", 
+     RowBox[{"arduinoActive", "=", "550"}], ";", "\[IndentingNewLine]", 
+     RowBox[{"arduinoIdle", "=", "250"}], ";"}], "\[IndentingNewLine]", 
+    "*)"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"activeRatio", "=", 
+     RowBox[{"activeMinutesPerDay", "/", 
+      RowBox[{"(", 
+       RowBox[{"24", "*", "60"}], ")"}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"activePower", "=", 
+     RowBox[{"oled", "+", 
+      RowBox[{"(", 
+       RowBox[{
+        RowBox[{
+         RowBox[{"(", 
+          RowBox[{"1", "-", "arduinoIdleRatio"}], ")"}], "*", 
+         "arduinoActive"}], "+", 
+        RowBox[{"arduinoIdleRatio", "*", "arduinoIdle"}]}], ")"}], "+", 
+      "accActive", "+", "extraConstant"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"sleepPower", "=", 
+     RowBox[{
+     "oledSleep", "+", "arduinoSleep", "+", "accLowPower", "+", 
+      "extraConstant"}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"avgPower", "=", 
+     RowBox[{
+      RowBox[{"activeRatio", "*", "activePower"}], "+", 
+      RowBox[{
+       RowBox[{"(", 
+        RowBox[{"1", "-", "activeRatio"}], ")"}], "*", "sleepPower"}]}]}], 
+    ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"leakPower", "=", 
+     RowBox[{"selfDischarge", "*", "batterymAh", "*", 
+      RowBox[{"1000", "/", 
+       RowBox[{"(", 
+        RowBox[{"30", "*", "24"}], ")"}]}]}]}], ";"}], "\[IndentingNewLine]", 
+   RowBox[{
+    RowBox[{"batteryLife", "=", 
+     RowBox[{"batterymAh", "*", 
+      RowBox[{
+       RowBox[{"1000", "/", 
+        RowBox[{"(", 
+         RowBox[{"avgPower", "+", "leakPower"}], ")"}]}], "/", "24"}]}]}], 
+    ";"}], "\[IndentingNewLine]", "\[IndentingNewLine]", 
+   RowBox[{"Print", "[", 
+    RowBox[{"\"\<Active Ratio: \>\"", ",", 
+     RowBox[{"N", "[", 
+      RowBox[{
+       RowBox[{"activeRatio", "*", "100"}], ",", "3"}], "]"}], ",", 
+     "\"\<%\>\""}], "]"}], "\[IndentingNewLine]", 
+   RowBox[{"Print", "[", 
+    RowBox[{
+    "\"\<Active Power: \>\"", ",", "activePower", ",", "\"\<\[Micro]A\>\""}], 
+    "]"}], "\[IndentingNewLine]", 
+   RowBox[{"Print", "[", 
+    RowBox[{
+    "\"\<Sleep Power: \>\"", ",", "sleepPower", ",", "\"\<\[Micro]A\>\""}], 
+    "]"}], "\[IndentingNewLine]", 
+   RowBox[{"Print", "[", 
+    RowBox[{
+    "\"\<Avg Power: \>\"", ",", "avgPower", ",", "\"\<\[Micro]A\>\""}], "]"}],
+    "\[IndentingNewLine]", 
+   RowBox[{"Print", "[", 
+    RowBox[{
+    "\"\<Self-discharge Power: \>\"", ",", "leakPower", ",", 
+     "\"\<\[Micro]A\>\""}], "]"}], "\[IndentingNewLine]", 
+   RowBox[{"Print", "[", 
+    RowBox[{
+    "\"\<Battery Life: \>\"", ",", "batteryLife", ",", "\"\< days\>\""}], 
+    "]"}]}]}]], "Input",
+ CellChangeTimes->{{3.8159982744045005`*^9, 3.815998342069626*^9}, {
+  3.8159983991847067`*^9, 3.8159987239173*^9}, {3.8159987611356697`*^9, 
+  3.8159989786962814`*^9}, {3.8159990700461683`*^9, 3.815999246002242*^9}, {
+  3.8159992899777317`*^9, 3.8159994833865986`*^9}, {3.815999523827423*^9, 
+  3.8159995646697855`*^9}, {3.8159996278286943`*^9, 3.8159996365579405`*^9}, {
+  3.8159997249767065`*^9, 3.8159998008210707`*^9}, {3.816000413586475*^9, 
+  3.8160005361259456`*^9}, {3.81600088119514*^9, 3.8160008861571865`*^9}, {
+  3.8160009928453274`*^9, 3.816001006871206*^9}, {3.8160012885861464`*^9, 
+  3.816001527350461*^9}},
+ CellLabel->
+  "In[1582]:=",ExpressionUUID->"326ea1be-d229-4b7d-b86a-8a550cac2920"],
+
+Cell[CellGroupData[{
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Active Ratio: \"\>", "\[InvisibleSpace]", 
+   "2.0833333333333333333`3.", "\[InvisibleSpace]", "\<\"%\"\>"}],
+  SequenceForm["Active Ratio: ", 2.0833333333333333333`3., "%"],
+  Editable->False]], "Print",
+ CellChangeTimes->{{3.815998705811632*^9, 3.8159987243352537`*^9}, {
+   3.815998830124487*^9, 3.815998897547078*^9}, {3.815998971489014*^9, 
+   3.815998979103002*^9}, {3.8159991634361467`*^9, 3.8159991880697236`*^9}, {
+   3.815999292555729*^9, 3.8159994838683434`*^9}, {3.8159995363584657`*^9, 
+   3.815999564983944*^9}, {3.8159996312476416`*^9, 3.815999639621995*^9}, {
+   3.8159997118338366`*^9, 3.8159997489615307`*^9}, {3.815999782271125*^9, 
+   3.815999801290124*^9}, {3.8160004535250945`*^9, 3.816000537467083*^9}, 
+   3.8160008900816574`*^9, 3.816001285776758*^9, 3.81600134584242*^9, {
+   3.8160014974050026`*^9, 3.816001527868115*^9}},
+ CellLabel->
+  "During evaluation of \
+In[1582]:=",ExpressionUUID->"5a3e9cbb-9839-4fd1-8b7d-9e979c044fe8"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Active Power: \"\>", "\[InvisibleSpace]", "2651.94`", 
+   "\[InvisibleSpace]", "\<\"\[Micro]A\"\>"}],
+  SequenceForm["Active Power: ", 2651.94, "\[Micro]A"],
+  Editable->False]], "Print",
+ CellChangeTimes->{{3.815998705811632*^9, 3.8159987243352537`*^9}, {
+   3.815998830124487*^9, 3.815998897547078*^9}, {3.815998971489014*^9, 
+   3.815998979103002*^9}, {3.8159991634361467`*^9, 3.8159991880697236`*^9}, {
+   3.815999292555729*^9, 3.8159994838683434`*^9}, {3.8159995363584657`*^9, 
+   3.815999564983944*^9}, {3.8159996312476416`*^9, 3.815999639621995*^9}, {
+   3.8159997118338366`*^9, 3.8159997489615307`*^9}, {3.815999782271125*^9, 
+   3.815999801290124*^9}, {3.8160004535250945`*^9, 3.816000537467083*^9}, 
+   3.8160008900816574`*^9, 3.816001285776758*^9, 3.81600134584242*^9, {
+   3.8160014974050026`*^9, 3.816001527873067*^9}},
+ CellLabel->
+  "During evaluation of \
+In[1582]:=",ExpressionUUID->"f8683efd-40a0-4f32-b30c-8c0cc6705881"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Sleep Power: \"\>", "\[InvisibleSpace]", "60.949999999999996`",
+    "\[InvisibleSpace]", "\<\"\[Micro]A\"\>"}],
+  SequenceForm["Sleep Power: ", 60.949999999999996`, "\[Micro]A"],
+  Editable->False]], "Print",
+ CellChangeTimes->{{3.815998705811632*^9, 3.8159987243352537`*^9}, {
+   3.815998830124487*^9, 3.815998897547078*^9}, {3.815998971489014*^9, 
+   3.815998979103002*^9}, {3.8159991634361467`*^9, 3.8159991880697236`*^9}, {
+   3.815999292555729*^9, 3.8159994838683434`*^9}, {3.8159995363584657`*^9, 
+   3.815999564983944*^9}, {3.8159996312476416`*^9, 3.815999639621995*^9}, {
+   3.8159997118338366`*^9, 3.8159997489615307`*^9}, {3.815999782271125*^9, 
+   3.815999801290124*^9}, {3.8160004535250945`*^9, 3.816000537467083*^9}, 
+   3.8160008900816574`*^9, 3.816001285776758*^9, 3.81600134584242*^9, {
+   3.8160014974050026`*^9, 3.81600152787805*^9}},
+ CellLabel->
+  "During evaluation of \
+In[1582]:=",ExpressionUUID->"f2c6a019-ec39-4a93-bed1-8f7323544918"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Avg Power: \"\>", "\[InvisibleSpace]", "114.92895833333333`", 
+   "\[InvisibleSpace]", "\<\"\[Micro]A\"\>"}],
+  SequenceForm["Avg Power: ", 114.92895833333333`, "\[Micro]A"],
+  Editable->False]], "Print",
+ CellChangeTimes->{{3.815998705811632*^9, 3.8159987243352537`*^9}, {
+   3.815998830124487*^9, 3.815998897547078*^9}, {3.815998971489014*^9, 
+   3.815998979103002*^9}, {3.8159991634361467`*^9, 3.8159991880697236`*^9}, {
+   3.815999292555729*^9, 3.8159994838683434`*^9}, {3.8159995363584657`*^9, 
+   3.815999564983944*^9}, {3.8159996312476416`*^9, 3.815999639621995*^9}, {
+   3.8159997118338366`*^9, 3.8159997489615307`*^9}, {3.815999782271125*^9, 
+   3.815999801290124*^9}, {3.8160004535250945`*^9, 3.816000537467083*^9}, 
+   3.8160008900816574`*^9, 3.816001285776758*^9, 3.81600134584242*^9, {
+   3.8160014974050026`*^9, 3.816001527880045*^9}},
+ CellLabel->
+  "During evaluation of \
+In[1582]:=",ExpressionUUID->"927adc48-32ee-4bea-91fa-c26849a00456"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Self-discharge Power: \"\>", "\[InvisibleSpace]", 
+   "41.666666666666664`", "\[InvisibleSpace]", "\<\"\[Micro]A\"\>"}],
+  SequenceForm["Self-discharge Power: ", 41.666666666666664`, "\[Micro]A"],
+  Editable->False]], "Print",
+ CellChangeTimes->{{3.815998705811632*^9, 3.8159987243352537`*^9}, {
+   3.815998830124487*^9, 3.815998897547078*^9}, {3.815998971489014*^9, 
+   3.815998979103002*^9}, {3.8159991634361467`*^9, 3.8159991880697236`*^9}, {
+   3.815999292555729*^9, 3.8159994838683434`*^9}, {3.8159995363584657`*^9, 
+   3.815999564983944*^9}, {3.8159996312476416`*^9, 3.815999639621995*^9}, {
+   3.8159997118338366`*^9, 3.8159997489615307`*^9}, {3.815999782271125*^9, 
+   3.815999801290124*^9}, {3.8160004535250945`*^9, 3.816000537467083*^9}, 
+   3.8160008900816574`*^9, 3.816001285776758*^9, 3.81600134584242*^9, {
+   3.8160014974050026`*^9, 3.816001527882039*^9}},
+ CellLabel->
+  "During evaluation of \
+In[1582]:=",ExpressionUUID->"df05000d-ff9e-4675-9814-b28d0be87ae9"],
+
+Cell[BoxData[
+ InterpretationBox[
+  RowBox[{"\<\"Battery Life: \"\>", "\[InvisibleSpace]", 
+   "266.07810190525225`", "\[InvisibleSpace]", "\<\" days\"\>"}],
+  SequenceForm["Battery Life: ", 266.07810190525225`, " days"],
+  Editable->False]], "Print",
+ CellChangeTimes->{{3.815998705811632*^9, 3.8159987243352537`*^9}, {
+   3.815998830124487*^9, 3.815998897547078*^9}, {3.815998971489014*^9, 
+   3.815998979103002*^9}, {3.8159991634361467`*^9, 3.8159991880697236`*^9}, {
+   3.815999292555729*^9, 3.8159994838683434`*^9}, {3.8159995363584657`*^9, 
+   3.815999564983944*^9}, {3.8159996312476416`*^9, 3.815999639621995*^9}, {
+   3.8159997118338366`*^9, 3.8159997489615307`*^9}, {3.815999782271125*^9, 
+   3.815999801290124*^9}, {3.8160004535250945`*^9, 3.816000537467083*^9}, 
+   3.8160008900816574`*^9, 3.816001285776758*^9, 3.81600134584242*^9, {
+   3.8160014974050026`*^9, 3.8160015278850327`*^9}},
+ CellLabel->
+  "During evaluation of \
+In[1582]:=",ExpressionUUID->"282a2b9c-c634-4d59-a272-5c2df05a0fd1"]
+}, Open  ]]
+}, Open  ]]
+},
+WindowSize->{760, 833},
+WindowMargins->{{572, Automatic}, {64, Automatic}},
+FrontEndVersion->"12.1 for Microsoft Windows (64-bit) (March 18, 2020)",
+StyleDefinitions->"Default.nb",
+ExpressionUUID->"d4d00d22-9f1f-45fd-b87c-8fe767479fc2"
+]
+(* End of Notebook Content *)
+
+(* Internal cache information *)
+(*CellTagsOutline
+CellTagsIndex->{}
+*)
+(*CellTagsIndex
+CellTagsIndex->{}
+*)
+(*NotebookFileOutline
+Notebook[{
+Cell[CellGroupData[{
+Cell[580, 22, 5399, 131, 675, "Input",ExpressionUUID->"326ea1be-d229-4b7d-b86a-8a550cac2920"],
+Cell[CellGroupData[{
+Cell[6004, 157, 1005, 17, 22, "Print",ExpressionUUID->"5a3e9cbb-9839-4fd1-8b7d-9e979c044fe8"],
+Cell[7012, 176, 988, 17, 22, "Print",ExpressionUUID->"f8683efd-40a0-4f32-b30c-8c0cc6705881"],
+Cell[8003, 195, 1008, 17, 22, "Print",ExpressionUUID->"f2c6a019-ec39-4a93-bed1-8f7323544918"],
+Cell[9014, 214, 1005, 17, 22, "Print",ExpressionUUID->"927adc48-32ee-4bea-91fa-c26849a00456"],
+Cell[10022, 233, 1027, 17, 22, "Print",ExpressionUUID->"df05000d-ff9e-4675-9814-b28d0be87ae9"],
+Cell[11052, 252, 1005, 17, 22, "Print",ExpressionUUID->"282a2b9c-c634-4d59-a272-5c2df05a0fd1"]
+}, Open  ]]
+}, Open  ]]
+}
+]
+*)
+
+(* End of internal cache information *)
+
