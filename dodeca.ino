@@ -400,24 +400,11 @@ static bool check_battery()
     power_adc_enable();
     ADCSRA = 0x80;
 
-    //Do a warmup read, since the first read after the ADC powers on is an extended read and may
-    //not be accurate.
     select_adc_pin(BATTERY_VOLTAGE_PIN);
-    analog_read();
-
+    // Now sample-and-hold capacitor is charging, and 1.1V bandgap reference is stabilizing.
+    // Bandgap takes up to 70us (from datasheet),
+    // and cap, 5*R*C = 5 * 1/(1/1M + 1/4M7) * 14pF = 58us
     delayMicroseconds(70);
-
-    //Start real read
-    select_adc_pin(BATTERY_VOLTAGE_PIN);
-
-    //Wait some time for the voltage to spread through the thick impedance
-    power_timer0_enable();
-    start = micros();
-    do
-    {
-        LowPower.idle(SLEEP_FOREVER, ADC_ON, TIMER2_ON, TIMER1_ON, TIMER0_ON, SPI_ON, USART0_ON, TWI_OFF);
-    } while ((long)(micros() - start) < BATTERY_READ_MICROS);
-    power_timer0_disable();
 
     //Carry out conversion and disable ADC
     int voltage = analog_read();
