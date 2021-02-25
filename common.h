@@ -95,7 +95,12 @@ enum Orient
     ORIENT_288,
 };
 
-void select_screen(int screen);
+enum BatStatus {
+    BAT_CHARGING,
+    BAT_CHARGED,
+    BAT_LOW,
+    BAT_NOT_CHARGING,
+};
 
 #include "config.h"
 #include "timekeep.h"

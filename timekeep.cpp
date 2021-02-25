@@ -1,5 +1,5 @@
 
-#include "TimerOne.h"
+#include "TimerOne.h"   // Library: "TimerOne" v1.1.0
 
 #include "common.h"
 

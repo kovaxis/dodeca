@@ -97,6 +97,22 @@ const PROGMEM Sprite LOWBAT_SPRITE = {
     LOWBAT_DATA,
 };
 
+const PROGMEM Sprite FULLBAT_SPRITE = {
+    29,
+    16,
+    10,
+    16,
+    FULLBAT_DATA,
+};
+
+const PROGMEM Sprite CHARGING_SPRITE = {
+    29,
+    16,
+    10,
+    16,
+    CHARGING_DATA,
+};
+
 static byte buffer_mem[2 * SCRBUF_WIDTH * SCRBUF_PAGES];
 static byte *front_buffer = buffer_mem;
 
@@ -173,11 +189,29 @@ void draw_upsidedown(int width, int height, int base_x, int base_y, const byte *
     }
 }
 
-void scr_draw_lowbat(int orient)
+void scr_draw_bat_sprite(BatStatus bat_status)
 {
+    const Sprite* src_sprite;
+    switch (bat_status) {
+        case BAT_LOW:
+            src_sprite = &LOWBAT_SPRITE;
+            break;
+        case BAT_CHARGING:
+            src_sprite = &CHARGING_SPRITE;
+            break;
+        case BAT_CHARGED:
+            src_sprite = &FULLBAT_SPRITE;
+            break;
+#ifdef DEBUG_SERIAL
+        default:
+            Serial.print(F("ERROR: attempting to draw bat_status="));
+            Serial.println(bat_status, HEX);
+#endif
+    }
+
     Sprite sprite;
-    byte data[100];
-    memcpy_P(&sprite, &LOWBAT_SPRITE, sizeof(Sprite));
+    byte data[MAX_SPRITE_SIZE];
+    memcpy_P(&sprite, src_sprite, sizeof(Sprite));
     memcpy_P(data, sprite.data, (((int)sprite.width) * sprite.height + 7) / 8);
     draw_upright(sprite.width, sprite.height, sprite.default_x, sprite.default_y, data);
 }

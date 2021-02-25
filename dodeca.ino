@@ -6,6 +6,7 @@
 #include "BMA400.h"
 #include "LowPower.h"
 #include "screen.h"
+#include <EnableInterrupt.h>    // Library: "EnableInterrupt", v1.1.0
 
 #ifndef cbi
 #define cbi(sfr, bit) (_SFR_BYTE(sfr) &= ~_BV(bit))
@@ -26,6 +27,9 @@ static int low_battery_frames = -1;
 static int battery_display_voltage = 0;
 #endif
 
+/**
+ * TODO: document
+ */
 void select_screen(int screen)
 {
     static Instant last_screen_change = Instant();
@@ -49,6 +53,13 @@ void select_screen(int screen)
             last_screen_change = Instant();
         }
     }
+}
+
+static void draw_bat_charge(BatStatus bat_status) {
+    scr_clear();
+    scr_draw_bat_sprite(bat_status);
+    scr_show();
+    oled.on();
 }
 
 static void drawScreen(int seconds, bool show)
@@ -77,7 +88,7 @@ static void drawScreen(int seconds, bool show)
         if (low_battery_frames == 0)
         {
             scr_clear();
-            scr_draw_lowbat(orient);
+            draw_bat_charge(BAT_LOW);
             scr_show();
         }
 
@@ -178,8 +189,14 @@ void setup()
     //Disable pull-up on RX pin, since when the USB2SERIAL chip is off its TX pin is at 0V
     digitalWrite(0, LOW);
 
-    pinMode(WAKEUP_INT_PIN, INPUT);
-    attachInterrupt(digitalPinToInterrupt(WAKEUP_INT_PIN), on_accelerometer_wakeup, RISING);
+    pinMode(ACCEL_INT_PIN, INPUT);
+    // Use RISING. Int1 pin stays high, so no need to use CHANGE to avoid missing the interrupt.
+    enableInterrupt(ACCEL_INT_PIN, on_wakeup, RISING);
+
+    pinMode(BATTERY_CHARGING_PIN, INPUT_PULLUP);
+    pinMode(BATTERY_CHARGED_PIN, INPUT_PULLUP);
+    enableInterrupt(BATTERY_CHARGING_PIN, on_wakeup, CHANGE);
+    enableInterrupt(BATTERY_CHARGED_PIN, on_wakeup, CHANGE);
 
 #ifdef DEBUG_LED
     pinMode(DEBUG_LED, OUTPUT);
@@ -298,9 +315,9 @@ void setup()
     select_screen(0);
 }
 
-static void on_accelerometer_wakeup()
+static void on_wakeup()
 {
-    //Do nothing
+    //Do nothing. The chip stops sleeping and everything is handled in loop().
 }
 
 static void face_to_normal(byte face, Vec3<int> *normal)
@@ -423,6 +440,23 @@ static bool check_battery()
 #endif
 #endif
     return voltage <= BATTERY_LOW_THRESHOLD;
+}
+
+static BatStatus get_charge_status() {
+    /*
+    Charger is a TP4056 board. It had two leds, charging and charged, that light up respectively, one at a time.
+    Also when there's no battery, charged is lit and charging flashes. We ignore that case.
+    As the leds are turned on by the TP4056 with open drain, and the arduino pins have pullups,
+    LOW means that the led would be lit.
+    */
+
+    if (digitalRead(BATTERY_CHARGED_PIN) == LOW) {
+        return BAT_CHARGED;
+    }
+    if (digitalRead(BATTERY_CHARGING_PIN) == LOW) {
+        return BAT_CHARGING;
+    }
+    return BAT_NOT_CHARGING;
 }
 
 static bool change_face(const Vec3<int> &acc)
@@ -691,7 +725,15 @@ void loop()
     if (current_face == 0 || current_face == NORMAL_COUNT)
     {
         // Home face
-        select_screen(0);
+        
+        BatStatus bat_status = get_charge_status();
+        if (bat_status == BAT_NOT_CHARGING) {
+            select_screen(0);
+        } else {
+            select_screen(SSD1306_LOW);     // TODO: draw in both
+            draw_bat_charge(bat_status);
+        }
+
         if (!reliable)
         {
             timer_ref = Instant();
