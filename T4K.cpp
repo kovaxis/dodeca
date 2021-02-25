@@ -12,7 +12,7 @@
 
 // I2C address of the OLED screen.
 // By default, 0x3c.
-// By wiring some chip pin to HIGH, can be set to 0x3d.
+// By wiring SA0 (pin 15) to HIGH, can be set to 0x3d.
 uint8_t SSD1306 = 0x3c;
 
 #define SSD1306_COLUMNS 128
