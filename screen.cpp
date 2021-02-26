@@ -210,7 +210,7 @@ void scr_draw_bat_sprite(BatStatus bat_status)
     }
 
     Sprite sprite;
-    byte data[MAX_SPRITE_SIZE];
+    byte data[MAX_SPRITE_SIZE + 1];
     memcpy_P(&sprite, src_sprite, sizeof(Sprite));
     memcpy_P(data, sprite.data, (((int)sprite.width) * sprite.height + 7) / 8);
     draw_upright(sprite.width, sprite.height, sprite.default_x, sprite.default_y, data);
