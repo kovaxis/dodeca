@@ -8,10 +8,10 @@
 // Tests show wiring SDO to ground consumes less power.
 const uint8_t BMA400_ADDRESS = 0x14;
 
-// Screen address for the lower faces.
-const uint8_t SSD1306_LOW = 0x3c;
-// Screen address for the higher faces.
-const uint8_t SSD1306_HIGH = 0x3d;
+const uint8_t SSD1306_ADDRESS[] = {
+    0x3c,   // Screen address for the lower faces.
+    0x3d,   // Screen address for the higher faces.
+};
 
 // Arduino pin mapped to the INT1 pin on the BMA400 accelerometer.
 const uint8_t ACCEL_INT_PIN = 4;
