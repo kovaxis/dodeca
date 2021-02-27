@@ -372,3 +372,16 @@ void scr_force_swap()
     //Swap buffer
     front_buffer = backbuf;
 }
+
+void scr_resend_frontbuf() {
+    for (int page = 0; page < SCRBUF_PAGES; page++) {
+        oled.setCursor(SCRBUF_X, SCRBUF_PAGEY + page);
+        oled.startData();
+        for (int x = 0; x < SCRBUF_WIDTH; x++) {
+            int idx = page * SCRBUF_WIDTH + x;
+            byte page_col = front_buffer[idx];
+            oled.sendData(page_col);
+        }
+        oled.endData();
+    }
+}

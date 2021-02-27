@@ -53,17 +53,19 @@ void turn_screen_on(int screen) {
     }
 }
 
-/** Enables the screen passed as argument. If the other screen is on, turn it off first. */
+/** Enables the screen passed as argument, and leaves SSD1306 variable pointing to it.
+  * If the other screen is on, turn it off first.
+  */
 void select_screen(int screen) {
     turn_screen_off(screen ^ 1);
     turn_screen_on(screen);
+    SSD1306 = SSD1306_ADDRESS[screen];
 }
 
 static void draw_bat_charge(BatStatus bat_status) {
     scr_clear();
     scr_draw_bat_sprite(bat_status);
     scr_show();
-    oled.on();
 }
 
 static void drawScreen(int seconds, bool show)
@@ -734,8 +736,15 @@ void loop()
         if (bat_status == BAT_NOT_CHARGING) {
             turn_off_screens();
         } else {
-            select_screen(LOW);////////////
+            // Custom handling to draw the same in both screens
+            turn_screen_on(LOW);
+            SSD1306 = SSD1306_ADDRESS[LOW];
             draw_bat_charge(bat_status);
+
+            screen_on[HIGH] = true;
+            SSD1306 = SSD1306_ADDRESS[HIGH];
+            scr_resend_frontbuf();
+            oled.forceOn();
         }
 
         if (!reliable)

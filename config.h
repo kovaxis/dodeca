@@ -91,9 +91,6 @@ const int SCRBUF_WIDTH = 48;
 // Height of the screen area in pages (8 pixels).
 const int SCRBUF_PAGES = 6;
 
-// Minimum amount of time between switching power on an OLED, in milliseconds.
-const int OLED_POWER_DEBOUNCE = 100;
-
 // Blinking period while counting down. Should be a divisor of 1000. In practice, clamped to the
 // next multiple of TIMER_PERIOD.
 const int COUNTDOWN_BLINK_PERIOD = 1000;
