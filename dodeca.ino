@@ -27,43 +27,36 @@ static int low_battery_frames = -1;
 static int battery_display_voltage = 0;
 #endif
 
-static bool screen_on[] = { false, false };
-
-void turn_screen_off(int screen) {
-    if (screen_on[screen]) {
-        screen_on[screen] = false;
-        SSD1306 = SSD1306_ADDRESS[screen];
-        oled.forceOff();
+/** Turns off the currently active screen, and if not 0, turns `screen` on. */
+void select_screen(int screen)
+{
+    static Instant last_screen_change = Instant();
+    if (screen != SSD1306)
+    {
+        unsigned long millis_debounce = last_screen_change.elapsed().as_millis();
+        if (millis_debounce < 0 || millis_debounce >= OLED_POWER_DEBOUNCE)
+        {
+            if (SSD1306 != 0)
+            {
+                oled.forceOff();
+            }
+            SSD1306 = screen;
+            if (screen != 0)
+            {
+                scr_clear();
+                scr_force_swap();
+                oled.fill(0);
+                oled.forceOn();
+            }
+            last_screen_change = Instant();
+        }
     }
-}
-
-void turn_off_screens() {
-    turn_screen_off(LOW);
-    turn_screen_off(HIGH);
-}
-
-void turn_screen_on(int screen) {
-    if (!screen_on[screen]) {
-        screen_on[screen] = true;
-        SSD1306 = SSD1306_ADDRESS[screen];
-        scr_clear();
-        scr_force_swap();
-        oled.fill(0);
-        oled.forceOn();
-    }
-}
-
-/** Enables the screen passed as argument. If the other screen is on, turn it off first. */
-void select_screen(int screen) {
-    turn_screen_off(screen ^ 1);
-    turn_screen_on(screen);
 }
 
 static void draw_bat_charge(BatStatus bat_status) {
     scr_clear();
     scr_draw_bat_sprite(bat_status);
     scr_show();
-    oled.on();
 }
 
 static void drawScreen(int seconds, bool show)
@@ -307,12 +300,12 @@ void setup()
 #endif
 
     // Initialize low screen
-    SSD1306 = SSD1306_ADDRESS[LOW];
+    SSD1306 = SSD1306_LOW;
     oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
     oled.fill(0);
 
     // Initialize high screen
-    SSD1306 = SSD1306_ADDRESS[HIGH];
+    SSD1306 = SSD1306_HIGH;
     oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
     oled.fill(0);
 
@@ -732,9 +725,10 @@ void loop()
         
         BatStatus bat_status = get_charge_status();
         if (bat_status == BAT_NOT_CHARGING) {
-            turn_off_screens();
+            select_screen(0);
         } else {
-            select_screen(LOW);////////////
+            int screen_pointing_up = SSD1306_LOW;     // TODO
+            select_screen(screen_pointing_up);
             draw_bat_charge(bat_status);
         }
 
@@ -779,11 +773,11 @@ void loop()
         }
         if (current_face < NORMAL_COUNT)
         {
-            select_screen(LOW);
+            select_screen(SSD1306_LOW);
         }
         else
         {
-            select_screen(HIGH);
+            select_screen(SSD1306_HIGH);
         }
         drawScreen(display_time, show);
     }
