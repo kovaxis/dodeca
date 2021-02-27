@@ -413,7 +413,7 @@ static int analog_read()
     return (high << 8) | low;
 }
 
-static bool check_battery()
+static bool check_battery_low()
 {
     unsigned long start;
     //Enable the ADC and select the battery channel
@@ -571,7 +571,7 @@ static bool change_face(const Vec3<int> &acc)
         // Also change screen orientation (to stay facing up)
         current_orient = pgm_read_byte(SCREEN_ORIENTATIONS + active_normal);
         // Also check battery
-        if (check_battery())
+        if (check_battery_low())
         {
             low_battery_frames = 0;
         }

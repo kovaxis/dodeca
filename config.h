@@ -16,12 +16,13 @@ const uint8_t SSD1306_ADDRESS[] = {
 // Arduino pin mapped to the INT1 pin on the BMA400 accelerometer.
 const uint8_t ACCEL_INT_PIN = 4;
 
+// On which Arduino analog pin to read battery voltage.
 const uint8_t BATTERY_VOLTAGE_PIN = A1;
 
+// Arduino pins connected to the leds of the battery charger.
 const uint8_t BATTERY_CHARGING_PIN = 5;
 const uint8_t BATTERY_CHARGED_PIN = 6;
 
-// On which Arduino analog pin to read battery voltage.
 
 // ---- Timing ----
 
@@ -144,9 +145,6 @@ const float BATTERY_DIV_R1 = 4.7;
 const float BATTERY_DIV_R2 = 1.;
 // The ADC reference voltage in use.
 const float BATTERY_REFERENCE_VOLTAGE = 1.1;
-// For how many microseconds to read the battery voltage.
-// Reading for too little time will result in poor readings if using high resistances.
-const long BATTERY_READ_MICROS = 1000;
 
 // Intermediate value.
 const float BATTERY_V_SCALE_RATIO = BATTERY_DIV_R2 / (BATTERY_DIV_R1 + BATTERY_DIV_R2);
