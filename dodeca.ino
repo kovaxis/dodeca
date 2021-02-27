@@ -158,7 +158,6 @@ BlueDot_BMA400 bma400 = BlueDot_BMA400(BMA400_ADDRESS);
 
 void setup()
 {
-    //select_adc_pin(BATTERY_VOLTAGE_PIN);
     //Switch off analog comparator
     ACSR = 0x80;
     //Switch off analog-to-digital
@@ -169,11 +168,13 @@ void setup()
     //Switch off unused modules
     power_adc_disable();
     power_spi_disable();
-    power_timer2_disable();
 
 #ifndef DEBUG_PROFILE_IDLE
     power_timer0_disable();
 #endif
+
+    // Timer1 is used for timekeep.
+    // Timer2 is used for tone().
 
     timekeep_init();
 
@@ -194,6 +195,8 @@ void setup()
     pinMode(BATTERY_CHARGED_PIN, INPUT_PULLUP);
     enableInterrupt(BATTERY_CHARGING_PIN, on_wakeup, CHANGE);
     enableInterrupt(BATTERY_CHARGED_PIN, on_wakeup, CHANGE);
+
+    // Note: pins 2 and 3 were avoided because enableInterrupt() would use INT0 and INT1 instead of PCINT2.
 
 #ifdef DEBUG_LED
     pinMode(DEBUG_LED, OUTPUT);
@@ -310,6 +313,11 @@ void setup()
     oled.fill(0);
 
     // Note: both screens begin off
+
+
+    digitalWrite(TONE_PIN, LOW);
+    pinMode(TONE_PIN, OUTPUT);
+    // Warning: constant output HIGH could burn the buzzer! (there's no DC blocking capacitor)
 }
 
 static void on_wakeup()
@@ -570,6 +578,10 @@ static bool change_face(const Vec3<int> &acc)
         }
     }
     current_face = active_normal;
+
+    tone(TONE_PIN, BOP_FREQUENCY, BOP_DURATION);
+    // Note: after tone duration is completed, the library sets TONE_PIN LOW.
+
     return true;
 }
 
@@ -640,6 +652,10 @@ static void deep_sleep(Vec3<int> &cur_acc)
     bma400.setWakeupRef(cur_acc.x, cur_acc.y, cur_acc.z);
     bma400.setPowerMode(BMA400_LOWPOWER);
 
+    // If because of a software bug, clock is halted while TONE_PIN is HIGH, buzzer could be burned.
+    // This ensures that the pin is LOW and won't be turned HIGH:
+    noTone(TONE_PIN);
+
     //Enter atmega328p deep sleep until the accelerometer interrupt wakes us up
     //Note that adc was already turned off at setup. The `LowPower` library is passed an `ADC_ON`
     //value so that it doesn't turn them back on after sleeping.
@@ -688,7 +704,7 @@ void loop()
             {
                 //Keeping TIMER1 on will enable the periodic timer interrupt we're using to keep
                 //track of time, meaning that timekeeping will continue.
-                //Note that adc, timer0, timer2, spi and usart were already turned off at setup.
+                //Note that adc, timer0, spi and usart were already turned off at setup.
                 //The `LowPower` library is passed `_ON` values so that it doesn't turn them back
                 //on after sleeping.
                 LowPower.idle(SLEEP_FOREVER, ADC_ON, TIMER2_ON, TIMER1_ON, TIMER0_ON, SPI_ON, USART0_ON, TWI_OFF);

@@ -23,6 +23,9 @@ const uint8_t BATTERY_VOLTAGE_PIN = A1;
 const uint8_t BATTERY_CHARGING_PIN = 5;
 const uint8_t BATTERY_CHARGED_PIN = 6;
 
+// Pin that drives the buzzer with a tone.
+const uint8_t TONE_PIN = 2;
+
 
 // ---- Timing ----
 
@@ -61,6 +64,33 @@ const int MAX_AVG_DEVIATION = 20;
 // MIN_FACE_DIST.
 // Faces are about 1g apart from each other.
 const int MIN_FACE_DIST = 700;
+
+// Frequency for a BOP sound.
+const unsigned int BOP_FREQUENCY = 427;
+// Frequency for a BEEP sound.
+const unsigned int BEEP_FREQUENCY = 1894;
+
+/*
+________███████████________
+        <-BOP_DUR->
+*/
+// Duration of BOP sound, in milliseconds.
+const unsigned long BOP_DURATION = 70;
+
+/*
+NUMBER_OF_BEEPS=4
+
+________██████______██████______██████______██████______________________________________________________██████______██████___...
+        <-BEEP_PER-><-BEEP_PER-><-BEEP_PER-><-BEEP_PER->                                                <-BEEP_PER-><-BEEP_PER->
+
+        <--------------BEEP_SEQ_DURATION---------------><--------------BEEP_SEQ_DURATION---------------><--------------...
+*/
+// How many beeps to make in one sequence.
+const int NUMBER_OF_BEEPS = 4;
+// How long a beep sequence is.
+const int BEEP_SEQ_DURATION = 500;
+
+const int BEEP_PERIOD = BEEP_SEQ_DURATION / NUMBER_OF_BEEPS;
 
 // ---- Sleep behaviour ----
 
