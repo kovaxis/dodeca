@@ -727,7 +727,7 @@ void loop()
         if (bat_status == BAT_NOT_CHARGING) {
             select_screen(0);
         } else {
-            int screen_pointing_up = SSD1306_LOW;     // TODO
+            int screen_pointing_up = (current_face == FACE_FOR_LOW_SCREEN_POINTING_UP) ? SSD1306_LOW : SSD1306_HIGH;
             select_screen(screen_pointing_up);
             draw_bat_charge(bat_status);
         }

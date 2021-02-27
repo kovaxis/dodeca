@@ -165,6 +165,9 @@ const int LOW_BATTERY_BLINK_ONFRAMES = 6;
 const int NORMAL_COUNT = 6;
 const int FACE_COUNT = (NORMAL_COUNT * 2);
 
+// Which face is active when low screen is pointing up.
+const int FACE_FOR_LOW_SCREEN_POINTING_UP = 0;      // Either 0 or NORMAL_COUNT
+
 // Normals in accelerometer space for each face pair, all with approximate magnitude 1024.
 const PROGMEM Vec3<int> NORMALS[NORMAL_COUNT] = {
     //Orientation 0 (home)
