@@ -20,6 +20,7 @@ static byte current_face = 0;
 static byte current_orient = ORIENT_000;
 static Instant timer_ref = Instant();
 static int remaining_seconds = 0;
+static bool timer_expired;
 static Vec3<int> rollavg_buf[ROLLAVG_LEN];
 static byte rollavg_idx = 0;
 static int low_battery_frames = -1;
@@ -424,7 +425,7 @@ static bool check_battery_low()
     // Now sample-and-hold capacitor is charging, and 1.1V bandgap reference is stabilizing.
     // Bandgap takes up to 70us (from datasheet),
     // and cap, 5*R*C = 5 * 1/(1/1M + 1/4M7) * 14pF = 58us
-    delayMicroseconds(70);
+    delayMicroseconds(70 * 2);  // x2 in case cap is bigger or whatever
 
     //Carry out conversion and disable ADC
     int voltage = analog_read();
@@ -578,6 +579,7 @@ static bool change_face(const Vec3<int> &acc)
     current_face = active_normal;
 
     dodecaTone(BOP_FREQUENCY, BOP_DURATION);
+    timer_expired = false;
 
     return true;
 }
@@ -774,6 +776,12 @@ void loop()
         {
             display_time = -remaining_seconds;
             show = now.elapsed_since(timer_ref).as_millis() % ALARM_BLINK_PERIOD >= ALARM_BLINK_OFFTIME;
+
+            if (!timer_expired) {
+                timer_expired = true;
+                dodecaAlarm();
+                // Alarm tone is turned off by playing BOP sound
+            }
         }
         else
         {

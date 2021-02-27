@@ -18,6 +18,13 @@ void dodecaToneSetup() {
 
 volatile long toggle_count;
 
+volatile bool alarm_pattern;
+volatile bool make_sound;
+volatile int remaining_beeps;
+volatile bool beep_period_silence;
+volatile bool beep_seq_silence;
+volatile long initial_toggle_count;
+
 void dodecaTone(unsigned int frequency, unsigned long duration) {
     TCCR2A = 0;
     TCCR2B = 0;
@@ -74,10 +81,18 @@ void dodecaTone(unsigned int frequency, unsigned long duration) {
     // then turn on the interrupts
     OCR2A = ocr;
     bitWrite(TIMSK2, OCIE2A, 1);
+
+    alarm_pattern = false;
+    make_sound = true;
 }
 
 void dodecaAlarm() {
-    // TODO
+    dodecaTone(BEEP_FREQUENCY, BEEP_PERIOD / 2);
+    alarm_pattern = true;
+    remaining_beeps = NUMBER_OF_BEEPS;
+    beep_period_silence = false;
+    beep_seq_silence = false;
+    initial_toggle_count = toggle_count;
 }
 
 void dodecaNoTone() {
@@ -91,10 +106,45 @@ void dodecaNoTone() {
 
 ISR(TIMER2_COMPA_vect) {
     if (toggle_count != 0) {
-        *tone_PINx_reg = tone_pin_bitmask;  // toggle the pin
+        if (make_sound) {
+            *tone_PINx_reg = tone_pin_bitmask;  // toggle the pin
+        }
         toggle_count--;
-
-    } else {
+        return;
+    }
+    if (!alarm_pattern) {
+        // Duration expired
         dodecaNoTone();
+        return;
+    }
+
+    // Playing an alarm pattern
+
+    toggle_count = initial_toggle_count;    // Reset
+
+    // Handle states:
+
+    if (!beep_period_silence) {
+        // Was playing beep, now should play silence.
+        make_sound = false;
+        digitalWrite(TONE_PIN, LOW);
+    } else {
+        // Was silent, now make sound (if not on a sequence of silences).
+        make_sound = !beep_seq_silence;
+        remaining_beeps--;
+    }
+    beep_period_silence = !beep_period_silence;
+
+    if (remaining_beeps == 0) {
+        if (!beep_seq_silence) {
+            // Was playing a sequence of beeps, now play a sequence of silences.
+            make_sound = false;
+            digitalWrite(TONE_PIN, LOW);
+        } else {
+            // Was silent, now make sound.
+            make_sound = true;
+        }
+        beep_seq_silence = !beep_seq_silence;
+        remaining_beeps = NUMBER_OF_BEEPS;
     }
 }

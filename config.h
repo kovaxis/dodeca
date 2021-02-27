@@ -161,7 +161,7 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 //#define DEBUG_LED LED_BUILTIN
 
 // Whether to display the measured battery voltage on screen instead of the current time.
-#define DISPLAY_VOLTAGE_ON_SCREEN
+//#define DISPLAY_VOLTAGE_ON_SCREEN
 
 // ---- Battery settings ----
 
@@ -227,7 +227,7 @@ const PROGMEM byte SCREEN_ORIENTATIONS[FACE_COUNT] = {
 
 const PROGMEM int FACE_TIMES[FACE_COUNT] = {
     0,
-    5,
+    2,
     10,
     15,
     20,
