@@ -24,7 +24,7 @@ const uint8_t BATTERY_CHARGING_PIN = 5;
 const uint8_t BATTERY_CHARGED_PIN = 6;
 
 // Pin that drives the buzzer with a tone.
-const uint8_t TONE_PIN = 2;
+const uint8_t TONE_PIN = 12;
 
 
 // ---- Timing ----

@@ -6,6 +6,7 @@
 #include "BMA400.h"
 #include "LowPower.h"
 #include "screen.h"
+#include "DodecaTone.h"
 #include <EnableInterrupt.h>    // Library: "EnableInterrupt", v1.1.0
 
 #ifndef cbi
@@ -174,7 +175,7 @@ void setup()
 #endif
 
     // Timer1 is used for timekeep.
-    // Timer2 is used for tone().
+    // Timer2 is used for DodecaTone.
 
     timekeep_init();
 
@@ -314,10 +315,7 @@ void setup()
 
     // Note: both screens begin off
 
-
-    digitalWrite(TONE_PIN, LOW);
-    pinMode(TONE_PIN, OUTPUT);
-    // Warning: constant output HIGH could burn the buzzer! (there's no DC blocking capacitor)
+    dodecaToneSetup();
 }
 
 static void on_wakeup()
@@ -579,8 +577,7 @@ static bool change_face(const Vec3<int> &acc)
     }
     current_face = active_normal;
 
-    tone(TONE_PIN, BOP_FREQUENCY, BOP_DURATION);
-    // Note: after tone duration is completed, the library sets TONE_PIN LOW.
+    dodecaTone(BOP_FREQUENCY, BOP_DURATION);
 
     return true;
 }
@@ -654,7 +651,7 @@ static void deep_sleep(Vec3<int> &cur_acc)
 
     // If because of a software bug, clock is halted while TONE_PIN is HIGH, buzzer could be burned.
     // This ensures that the pin is LOW and won't be turned HIGH:
-    noTone(TONE_PIN);
+    dodecaNoTone();
 
     //Enter atmega328p deep sleep until the accelerometer interrupt wakes us up
     //Note that adc was already turned off at setup. The `LowPower` library is passed an `ADC_ON`
