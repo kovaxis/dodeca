@@ -65,6 +65,8 @@ const int MAX_AVG_DEVIATION = 20;
 // Faces are about 1g apart from each other.
 const int MIN_FACE_DIST = 700;
 
+// ---- Sound behaviour ----
+
 // Frequency for a BOP sound.
 const unsigned int BOP_FREQUENCY = 427;
 // Frequency for a BEEP sound.
