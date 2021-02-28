@@ -59,6 +59,7 @@ static void draw_bat_charge(BatStatus bat_status) {
     scr_clear();
     scr_draw_bat_sprite(bat_status);
     scr_show();
+    oled.on();
 }
 
 static void drawScreen(int seconds, bool show)
