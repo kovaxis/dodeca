@@ -179,6 +179,8 @@ void setup()
     // Timer1 is used for timekeep.
     // Timer2 is used for DodecaTone.
 
+    // TODO: power_timer2_disable() / enable?
+
     timekeep_init();
 
 #ifdef DEBUG_SERIAL
@@ -315,7 +317,7 @@ void setup()
     oled.begin(128, 64, sizeof(tiny4koled_init_128x64b), tiny4koled_init_128x64b);
     oled.fill(0);
 
-    // Note: both screens begin off
+    // Note: both screens begin off (TODO: confirm, mearsuring consumption)
 
     dodecaToneSetup();
 }
@@ -450,7 +452,9 @@ static bool check_battery_low()
 static BatStatus get_charge_status() {
     /*
     Charger is a TP4056 board. It had two leds, charging and charged, that light up respectively, one at a time.
-    Also when there's no battery, charged is lit and charging flashes. We ignore that case.
+    Also when there's no battery, "charged" is lit and "charging" flashes briefly. We ignore that case.
+    (Actually, "charged" turns off imperceptibly while "charging" flashes,
+    so brief flashes of "battery charging" are normal while there's no battery.)
     As the leds are turned on by the TP4056 with open drain, and the arduino pins have pullups,
     LOW means that the led would be lit.
     */
@@ -738,7 +742,7 @@ void loop()
     if (current_face == 0 || current_face == NORMAL_COUNT)
     {
         // Home face
-        
+
         BatStatus bat_status = get_charge_status();
         if (bat_status == BAT_NOT_CHARGING) {
             select_screen(0);

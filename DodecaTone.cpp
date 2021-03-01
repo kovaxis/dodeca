@@ -10,7 +10,7 @@ void dodecaToneSetup() {
     pinMode(TONE_PIN, OUTPUT);
     // Warning: constant output HIGH could burn the buzzer! (there's no DC blocking capacitor)
 
-    // Precompute this for quick toggling (to prevent screwing frequency)
+    // Precompute this for quick toggling (so ISR is short)
     uint8_t port = digitalPinToPort(TONE_PIN);
     tone_PINx_reg = portInputRegister(port);
     tone_pin_bitmask = digitalPinToBitMask(TONE_PIN);
