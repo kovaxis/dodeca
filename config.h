@@ -168,7 +168,7 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 // ---- Battery settings ----
 
 // What battery voltage to consider "low".
-const float BATTERY_LOW_VOLTAGE = 3.4;
+const float BATTERY_LOW_VOLTAGE = 3.6;  // Chosen at this point because voltage/charge curve is too flat above 3.6 V
 
 // The resistance of the first resistor in the voltage divider (wiring to the battery).
 // The unit does not matter as long as it's consistent with `BATTERY_DIV_R2`.
@@ -182,6 +182,9 @@ const float BATTERY_REFERENCE_VOLTAGE = 1.1;
 const float BATTERY_V_SCALE_RATIO = BATTERY_DIV_R2 / (BATTERY_DIV_R1 + BATTERY_DIV_R2);
 // The ADC raw value to consider as "low battery" (in the range [0, 1023]).
 const int BATTERY_LOW_THRESHOLD = (int)(BATTERY_LOW_VOLTAGE * BATTERY_V_SCALE_RATIO / BATTERY_REFERENCE_VOLTAGE * 1024);
+
+// Note: battery low level is a rough estimate. It could be more accurate by adding a calibration factor
+// that accounts for resistor and VREF tolerances.
 
 // For how many frames to display the "low battery" icon.
 const int LOW_BATTERY_FRAMES = 56;
