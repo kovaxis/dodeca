@@ -14,17 +14,17 @@ const uint8_t SSD1306_LOW = 0x3c;
 const uint8_t SSD1306_HIGH = 0x3d;
 
 // Arduino pin mapped to the INT1 pin on the BMA400 accelerometer.
-const uint8_t ACCEL_INT_PIN = 4;
+const uint8_t ACCEL_INT_PIN = 5;
 
 // On which Arduino analog pin to read battery voltage.
 const uint8_t BATTERY_VOLTAGE_PIN = A1;
 
 // Arduino pins connected to the leds of the battery charger.
-const uint8_t BATTERY_CHARGING_PIN = 5;
-const uint8_t BATTERY_CHARGED_PIN = 6;
+const uint8_t BATTERY_CHARGING_PIN = 9;
+const uint8_t BATTERY_CHARGED_PIN = 2;
 
 // Pin that drives the buzzer with a tone.
-const uint8_t TONE_PIN = 12;
+const uint8_t TONE_PIN = 6;
 
 
 // ---- Timing ----

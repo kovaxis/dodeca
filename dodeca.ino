@@ -201,8 +201,6 @@ void setup()
     enableInterrupt(BATTERY_CHARGING_PIN, on_wakeup, CHANGE);
     enableInterrupt(BATTERY_CHARGED_PIN, on_wakeup, CHANGE);
 
-    // Note: pins 2 and 3 were avoided because enableInterrupt() would use INT0 and INT1 instead of PCINT2.
-
 #ifdef DEBUG_LED
     pinMode(DEBUG_LED, OUTPUT);
     digitalWrite(DEBUG_LED, HIGH);
