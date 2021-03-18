@@ -10,11 +10,11 @@ thickness = 2;
 
 /* [Buzzer] */
 buz = 12;
-buz_hole = 2;
+buz_hole = 3;
 buz_offset = -17;
 
 /* [Screen] */
-scr_window = 8;
+scr_window = 13;
 scr_center = 9;
 scr_close = 9;
 scr_far = 9;
@@ -26,19 +26,18 @@ usb_offset = 18;
 usb_thickness = 4;
 usb_backwall = 3;
 usb_wall = 2;
-usb_width = 16;
-usb_height = 21;
+usb_width = 16.6;
+usb_height = 20.6;
 usb_gap = 1.6;
 usb_port_offset = 1;
-usb_port_width = 8;
-usb_port_height = 3;
+usb_port_scale = 1.1;
 
 /* [Button] */
 but_offset = [17, -4];
 but_length = 7;
 but_width = 4.4;
 but_height = 5.6;
-but_hole = 1;
+but_hole = 2;
 but_backwall = 2;
 but_wall = 2;
 
@@ -46,7 +45,7 @@ but_wall = 2;
 fit_margin = 1;
 fit_outer = 3;
 fit_inner = 4;
-fit_tol = 0.4;
+fit_tol = 0.12;
 
 /* [Tolerances] */
 $fs = 0.2;
@@ -206,6 +205,9 @@ module shell_bottom() {
             cube([usb_width, usb_thickness + dtol, usb_height + (thickness - usb_gap)]);
             translate([0, -usb_port_offset, -thickness - dtol])
             linear_extrude(height = thickness + 2*dtol) {
+                translate([0, -1.5])
+                scale(usb_port_scale)
+                translate([0, 1.5])
                 polygon([
                     [-2.7, 0.0],
                     [-3.0, -0.2],
