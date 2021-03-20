@@ -10,11 +10,11 @@ thickness = 2;
 
 /* [Buzzer] */
 buz = 12;
-buz_hole = 3;
+buz_hole = 4;
 buz_offset = -17;
 
 /* [Screen] */
-scr_window = 13;
+scr_window = 12;
 scr_center = 9;
 scr_close = 9;
 scr_far = 9;
@@ -26,8 +26,8 @@ usb_offset = 18;
 usb_thickness = 4;
 usb_backwall = 3;
 usb_wall = 2;
-usb_width = 16.6;
-usb_height = 20.6;
+usb_width = 16;
+usb_height = 21;
 usb_gap = 1.6;
 usb_port_offset = 1;
 usb_port_scale = 1.1;
@@ -37,7 +37,7 @@ but_offset = [17, -4];
 but_length = 7;
 but_width = 4.4;
 but_height = 5.6;
-but_hole = 2;
+but_hole = 2.4;
 but_backwall = 2;
 but_wall = 2;
 
@@ -45,7 +45,7 @@ but_wall = 2;
 fit_margin = 1;
 fit_outer = 3;
 fit_inner = 4;
-fit_tol = 0.12;
+fit_tol = 0.08;
 
 /* [Tolerances] */
 $fs = 0.2;
