@@ -80,10 +80,13 @@ static byte reverse_byte(byte b) {
 
 enum Orient {
     ORIENT_000,
-    ORIENT_072,
-    ORIENT_144,
-    ORIENT_216,
-    ORIENT_288,
+    ORIENT_045,
+    ORIENT_090,
+    ORIENT_135,
+    ORIENT_180,
+    ORIENT_225,
+    ORIENT_270,
+    ORIENT_315,
 };
 
 enum BatStatus {

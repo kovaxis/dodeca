@@ -190,33 +190,9 @@ void scr_draw_bat_sprite(BatStatus bat_status) {
 }
 
 void scr_draw(int orient, int pos, int ch) {
-    // Pick rotation based on `orient`
-    const Font *font_ptr;
-    int rotate;
-    switch (orient) {
-        case ORIENT_000:
-            font_ptr = &FONT_00;
-            rotate = 0;
-            break;
-        case ORIENT_072:
-            font_ptr = &FONT_00;
-            rotate = 1;
-            break;
-        case ORIENT_144:
-            font_ptr = &FONT_45;
-            rotate = 2;
-            break;
-        case ORIENT_216:
-            font_ptr = &FONT_45;
-            rotate = 3;
-            break;
-        case ORIENT_288:
-            font_ptr = &FONT_00;
-            rotate = 3;
-            break;
-        default:
-            return;
-    }
+    // Pick rotation and font based on `orient`
+    const Font *font_ptr = (orient % 2 == 0 ? &FONT_00 : &FONT_45);
+    int rotate = ((orient + 1) / 2) % 4;
     Font font;
     memcpy_P(&font, font_ptr, sizeof(Font));
 
