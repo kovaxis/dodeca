@@ -33,7 +33,7 @@ const uint8_t SWITCH_PIN = 4;
 
 // After the alarm has been going for this amount of time, simply go into deep
 // sleep.
-const int ALARM_TIMEOUT = 90;
+const int ALARM_TIMEOUT = 60;
 
 // If `true`, changing from a non-home face to a non-home face will sum their
 // times.
@@ -124,7 +124,7 @@ ________██████______██████______██████______
 const int BEEP_SEQ_DURATION = 500;
 
 const int BEEP_PERIOD = BEEP_SEQ_DURATION / 4;
-const int BEEP_LEN = BEEP_PERIOD * 3 / 8;
+const int BEEP_LEN = BEEP_PERIOD * 4 / 8;
 
 const Tone BEEP_TONE = {BEEP_FREQUENCY, BEEP_LEN};
 const Tone BEEP_SILENCE = {0, BEEP_PERIOD - BEEP_LEN};
