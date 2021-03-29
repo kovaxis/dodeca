@@ -523,7 +523,7 @@ static bool change_face(const Vec3<int> &acc) {
     if (face_time == 0) {
         remaining_seconds = 0;
     } else {
-        if (remaining_seconds < 0) {
+        if (!ADDITIVE_FACES || remaining_seconds < 0) {
             remaining_seconds = 0;
         }
         remaining_seconds += face_time;

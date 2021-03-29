@@ -275,4 +275,6 @@ const PROGMEM int FACE_TIMES[FACE_COUNT] = {
     25*60,*/
 };
 
+const bool ADDITIVE_FACES = false;
+
 #endif
