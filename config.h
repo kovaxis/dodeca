@@ -224,8 +224,12 @@ const int FACE_FOR_LOW_SCREEN_POINTING_UP = 0;  // Either 0 or NORMAL_COUNT
 // magnitude 1024.
 const PROGMEM Vec3<int> NORMALS[NORMAL_COUNT] = {
     // Orientation 0 (home)
-    {4, -906, -477},  {0, -33, -1023},   {852, -289, -489},
-    {557, -751, 417}, {-516, -773, 429}, {-855, -309, -472},
+    {-5, -69, 1022},    // Average magnitude 1011.0287284212022
+    {274, -901, 402},   // Average magnitude 1039.5938404173132 (1074 from home)
+    {909, -72, 466},    // Average magnitude 1019.897079638824 (1070 from home)
+    {300, 832, 515},    // Average magnitude 994.2851347032802 (1078 from home)
+    {-744, 505, 489},   // Average magnitude 985.2690090439905 (1077 from home)
+    {-727, -577, 433},  // Average magnitude 1012.1631882607895 (1061 from home)
 };
 
 const PROGMEM byte SCREEN_ORIENTATIONS[FACE_COUNT] = {
