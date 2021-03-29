@@ -18,9 +18,10 @@
 
 static byte current_face = 0;
 static byte current_orient = ORIENT_000;
+static byte disabled_face = -1;
 static Instant timer_ref = Instant();
 static int remaining_seconds = 0;
-static bool timer_expired;
+static bool timer_expired = false;
 static Vec3<int> rollavg_buf[ROLLAVG_LEN];
 static byte rollavg_idx = 0;
 static int low_battery_frames = -1;
@@ -51,13 +52,6 @@ void select_screen(int screen) {
     }
 }
 
-static void draw_bat_charge(BatStatus bat_status) {
-    scr_clear();
-    scr_draw_bat_sprite(bat_status);
-    scr_show();
-    oled.on();
-}
-
 static void drawScreen(int seconds, bool show) {
     // Debug hatch pattern to test screen
 #ifdef DEBUG_DRAW_HATCH
@@ -79,7 +73,7 @@ static void drawScreen(int seconds, bool show) {
         // Draw low battery indicator instead of the normal timer
         if (low_battery_frames == 0) {
             scr_clear();
-            draw_bat_charge(BAT_LOW);
+            scr_draw_bat_sprite(BAT_LOW);
             scr_show();
         }
 
@@ -312,6 +306,18 @@ static void face_to_normal(byte face, Vec3<int> *normal) {
     }
 }
 
+static int face_to_screen(byte face) {
+    if (face < NORMAL_COUNT) {
+        return SSD1306_LOW;
+    } else {
+        return SSD1306_HIGH;
+    }
+}
+
+static bool is_home_face(byte face) {
+    return face == 0 || face == NORMAL_COUNT || face == disabled_face;
+}
+
 // Taken from the Arduino source for `analogRead` from `wiring_analog.c`.
 static void select_adc_pin(uint8_t pin) {
 #if defined(analogPinToChannel)
@@ -519,6 +525,7 @@ static bool change_face(const Vec3<int> &acc) {
     }
 
     // Changed face!
+    disabled_face = -1;
     int face_time = pgm_read_word(FACE_TIMES + active_normal);
     if (face_time == 0) {
         remaining_seconds = 0;
@@ -529,17 +536,29 @@ static bool change_face(const Vec3<int> &acc) {
         remaining_seconds += face_time;
     }
     timer_ref = Instant();
-    if (active_normal != 0 && active_normal != NORMAL_COUNT) {
+    bool play_facechange = true;
+    if (is_home_face(active_normal)) {
+        if (is_home_face(current_face)) {
+            // Don't play facechange when going from home face to home face
+            play_facechange = false;
+        }
+    } else {
         // Also change screen orientation (to stay facing up)
         current_orient = pgm_read_byte(SCREEN_ORIENTATIONS + active_normal);
         // Also check battery
         if (check_battery_low()) {
+            // Show low-battery icon
             low_battery_frames = 0;
+            // Play low-battery sound
+            dodecaTonePlay(LOWBATTERY_SEQUENCE);
+            play_facechange = false;
         }
+    }
+    if (play_facechange) {
+        dodecaTonePlay(FACECHANGE_SEQUENCE);
     }
     current_face = active_normal;
 
-    dodecaTonePlay(BOP_SEQUENCE);
     timer_expired = false;
 
     return true;
@@ -687,19 +706,18 @@ void loop() {
     bool reliable = change_face(acc);
 
     // Act based on current face
-    if (current_face == 0 || current_face == NORMAL_COUNT) {
+    if (is_home_face(current_face)) {
         // Home face
 
         BatStatus bat_status = get_charge_status();
         if (bat_status == BAT_NOT_CHARGING) {
             select_screen(0);
         } else {
-            int screen_pointing_up =
-                (current_face == FACE_FOR_LOW_SCREEN_POINTING_UP)
-                    ? SSD1306_LOW
-                    : SSD1306_HIGH;
-            select_screen(screen_pointing_up);
-            draw_bat_charge(bat_status);
+            select_screen(face_to_screen(current_face));
+            scr_clear();
+            scr_draw_bat_sprite(bat_status);
+            scr_show();
+            oled.on();
         }
 
         if (!reliable) {
@@ -729,8 +747,12 @@ void loop() {
 
             if (!timer_expired) {
                 timer_expired = true;
-                dodecaTonePlay(BEEP_SEQUENCE);
+                dodecaTonePlay(ALARM_SEQUENCE);
                 // Alarm tone is turned off by playing BOP sound
+            } else if (remaining_seconds < -ALARM_TIMEOUT) {
+                // Alarm has been going for too long
+                dodecaToneStop();
+                disabled_face = current_face;
             }
         } else {
             display_time = remaining_seconds;
@@ -741,11 +763,7 @@ void loop() {
         if (display_time >= 3600) {
             display_time /= 60;
         }
-        if (current_face < NORMAL_COUNT) {
-            select_screen(SSD1306_LOW);
-        } else {
-            select_screen(SSD1306_HIGH);
-        }
+        select_screen(face_to_screen(current_face));
         drawScreen(display_time, show);
     }
 

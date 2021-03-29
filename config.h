@@ -29,6 +29,16 @@ const uint8_t TONE_PIN = 8;
 // Pin connected to a switch to GND
 const uint8_t SWITCH_PIN = 4;
 
+// ---- Timer behaviour ----
+
+// After the alarm has been going for this amount of time, simply go into deep
+// sleep.
+const int ALARM_TIMEOUT = 90;
+
+// If `true`, changing from a non-home face to a non-home face will sum their
+// times.
+const bool ADDITIVE_FACES = false;
+
 // ---- Timing ----
 
 // The timer resolution in milliseconds. Lower values consume more power.
@@ -82,13 +92,23 @@ ________███████████________
 // Duration of BOP sound, in milliseconds.
 const unsigned long BOP_DURATION = 70;
 
-const PROGMEM Tone BOP_SEQUENCE[] = {
+const PROGMEM Tone FACECHANGE_SEQUENCE[] = {
     {BOP_FREQUENCY, BOP_DURATION},
     TONE_STOP,
 };
 
 // Frequency for a BEEP sound.
 const unsigned int BEEP_FREQUENCY = 1894;
+
+// Low battery sound
+const PROGMEM Tone LOWBATTERY_SEQUENCE[] = {
+    {784, 125}, {392, 250}, {0, 125}, {784, 125}, {392, 250}, TONE_STOP,
+};
+
+// Charging sound
+const PROGMEM Tone CHARGING_SEQUENCE[] = {
+    {698, 187}, {0, 63}, {659, 125}, {523, 375}, TONE_STOP,
+};
 
 /*
 
@@ -109,7 +129,7 @@ const int BEEP_LEN = BEEP_PERIOD * 3 / 8;
 const Tone BEEP_TONE = {BEEP_FREQUENCY, BEEP_LEN};
 const Tone BEEP_SILENCE = {0, BEEP_PERIOD - BEEP_LEN};
 
-const PROGMEM Tone BEEP_SEQUENCE[] = {
+const PROGMEM Tone ALARM_SEQUENCE[] = {
     BEEP_TONE,    BEEP_SILENCE, BEEP_TONE,    BEEP_SILENCE,           BEEP_TONE,
     BEEP_SILENCE, BEEP_TONE,    BEEP_SILENCE, {0, BEEP_SEQ_DURATION}, TONE_LOOP,
 };
@@ -202,7 +222,7 @@ const float BATTERY_LOW_VOLTAGE =
 const float BATTERY_DIV_R1 = 4.7;
 // The resistance of the second resistor in the voltage divider (wiring to
 // ground).
-const float BATTERY_DIV_R2 = 1.;
+const float BATTERY_DIV_R2 = 1.5;
 // The ADC reference voltage in use.
 const float BATTERY_REFERENCE_VOLTAGE = 1.1;
 
@@ -218,7 +238,7 @@ const int BATTERY_LOW_THRESHOLD =
 // adding a calibration factor that accounts for resistor and VREF tolerances.
 
 // For how many frames to display the "low battery" icon.
-const int LOW_BATTERY_FRAMES = 56;
+const int LOW_BATTERY_FRAMES = 24;
 
 // The low battery blink period in frames.
 const int LOW_BATTERY_BLINK_PERIOD = 8;
@@ -230,9 +250,6 @@ const int LOW_BATTERY_BLINK_ONFRAMES = 6;
 
 const int NORMAL_COUNT = 6;
 const int FACE_COUNT = (NORMAL_COUNT * 2);
-
-// Which face is active when low screen is pointing up.
-const int FACE_FOR_LOW_SCREEN_POINTING_UP = 0;  // Either 0 or NORMAL_COUNT
 
 // Normals in accelerometer space for each face pair, all with approximate
 // magnitude 1024.
@@ -274,7 +291,5 @@ const PROGMEM int FACE_TIMES[FACE_COUNT] = {
     20*60,
     25*60,*/
 };
-
-const bool ADDITIVE_FACES = false;
 
 #endif
