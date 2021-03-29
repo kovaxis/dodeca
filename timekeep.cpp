@@ -3,7 +3,7 @@
 #include "common.h"
 
 // Start at a weird offset to catch timer overflow errors early.
-unsigned int _millis_counter = 0xe800;
+volatile unsigned int _millis_counter = 0xe800;
 
 static void on_periodic() { _millis_counter += TIMER_PERIOD; }
 

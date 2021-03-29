@@ -2,7 +2,7 @@
 #ifndef TIMEKEEP_H
 #define TIMEKEEP_H
 
-extern unsigned int _millis_counter;
+extern volatile unsigned int _millis_counter;
 
 void timekeep_init();
 
