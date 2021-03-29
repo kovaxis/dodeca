@@ -74,8 +74,6 @@ const int MIN_FACE_DIST = 700;
 
 // Frequency for a BOP sound.
 const unsigned int BOP_FREQUENCY = 427;
-// Frequency for a BEEP sound.
-const unsigned int BEEP_FREQUENCY = 1894;
 
 /*
 ________███████████________
@@ -84,21 +82,37 @@ ________███████████________
 // Duration of BOP sound, in milliseconds.
 const unsigned long BOP_DURATION = 70;
 
-/*
-NUMBER_OF_BEEPS=4
+const PROGMEM Tone BOP_SEQUENCE[] = {
+    {BOP_FREQUENCY, BOP_DURATION},
+    TONE_STOP,
+};
 
+// Frequency for a BEEP sound.
+const unsigned int BEEP_FREQUENCY = 1894;
+
+/*
+
+       BEEP_LEN
+        <---->
 ________██████______██████______██████______██████______________________________________________________██████______██████___...
-        <-BEEP_PER-><-BEEP_PER-><-BEEP_PER-><-BEEP_PER->
-<-BEEP_PER-><-BEEP_PER->
+        <-BEEP_PER-><-BEEP_PER-><-BEEP_PER-><-BEEP_PER-><----------------------------------------------><-BEEP_PER-><-BEEP_PER->
 
         <--------------BEEP_SEQ_DURATION---------------><--------------BEEP_SEQ_DURATION---------------><--------------...
 */
-// How many beeps to make in one sequence.
-const int NUMBER_OF_BEEPS = 4;
+
 // How long a beep sequence is.
 const int BEEP_SEQ_DURATION = 500;
 
-const int BEEP_PERIOD = BEEP_SEQ_DURATION / NUMBER_OF_BEEPS;
+const int BEEP_PERIOD = BEEP_SEQ_DURATION / 4;
+const int BEEP_LEN = BEEP_PERIOD * 3 / 8;
+
+const Tone BEEP_TONE = {BEEP_FREQUENCY, BEEP_LEN};
+const Tone BEEP_SILENCE = {0, BEEP_PERIOD - BEEP_LEN};
+
+const PROGMEM Tone BEEP_SEQUENCE[] = {
+    BEEP_TONE,    BEEP_SILENCE, BEEP_TONE,    BEEP_SILENCE,           BEEP_TONE,
+    BEEP_SILENCE, BEEP_TONE,    BEEP_SILENCE, {0, BEEP_SEQ_DURATION}, TONE_LOOP,
+};
 
 // ---- Sleep behaviour ----
 

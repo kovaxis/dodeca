@@ -96,6 +96,13 @@ enum BatStatus {
     BAT_NOT_CHARGING,
 };
 
+struct Tone {
+    unsigned int freq;
+    unsigned int dur;
+};
+const Tone TONE_STOP = {0, 0};
+const Tone TONE_LOOP = {1, 0};
+
 #include "config.h"
 #include "timekeep.h"
 

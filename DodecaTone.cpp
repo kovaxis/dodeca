@@ -3,8 +3,8 @@
 
 #include "common.h"
 
-volatile uint8_t *tone_PINx_reg;
-volatile uint8_t tone_pin_bitmask;
+static volatile uint8_t* tone_PINx_reg;
+static volatile uint8_t tone_pin_bitmask;
 
 void dodecaToneSetup() {
     digitalWrite(TONE_PIN, LOW);
@@ -18,20 +18,22 @@ void dodecaToneSetup() {
     tone_pin_bitmask = digitalPinToBitMask(TONE_PIN);
 }
 
-volatile long toggle_count;
+static volatile unsigned long toggle_count;
+static volatile bool make_sound;
+static volatile Tone* first_tone;
+static volatile Tone* next_tone;
 
-volatile bool alarm_pattern;
-volatile bool make_sound;
-volatile int remaining_beeps;
-volatile bool beep_period_silence;
-volatile bool beep_seq_silence;
-volatile long initial_toggle_count;
-
-void dodecaTone(unsigned int frequency, unsigned long duration) {
+static void dodecaTone(unsigned int frequency, unsigned long duration) {
     TCCR2A = 0;
     TCCR2B = 0;
     bitWrite(TCCR2A, WGM21, 1);
     bitWrite(TCCR2B, CS20, 1);
+
+    make_sound = frequency != 0;
+    if (frequency == 0) {
+        frequency = 256;
+        digitalWrite(TONE_PIN, LOW);
+    }
 
     uint8_t prescalarbits;
     uint32_t ocr = 0;
@@ -77,21 +79,9 @@ void dodecaTone(unsigned int frequency, unsigned long duration) {
     // then turn on the interrupts
     OCR2A = ocr;
     bitWrite(TIMSK2, OCIE2A, 1);
-
-    alarm_pattern = false;
-    make_sound = true;
 }
 
-void dodecaAlarm() {
-    dodecaTone(BEEP_FREQUENCY, BEEP_PERIOD / 2);
-    alarm_pattern = true;
-    remaining_beeps = NUMBER_OF_BEEPS;
-    beep_period_silence = false;
-    beep_seq_silence = false;
-    initial_toggle_count = toggle_count;
-}
-
-void dodecaNoTone() {
+void dodecaToneStop() {
     bitWrite(TIMSK2, OCIE2A, 0);  // disable interrupt
     TCCR2A = (1 << WGM20);
     TCCR2B = (TCCR2B & 0b11111000) | (1 << CS22);
@@ -100,47 +90,38 @@ void dodecaNoTone() {
     digitalWrite(TONE_PIN, LOW);
 }
 
+void dodecaTonePlay(Tone* sequence) {
+    noInterrupts();
+    first_tone = sequence;
+    long raw_tone = pgm_read_dword(sequence++);
+    Tone& tone = reinterpret_cast<Tone&>(raw_tone);
+    next_tone = sequence;
+    dodecaTone(tone.freq, tone.dur);
+    interrupts();
+}
+
 ISR(TIMER2_COMPA_vect) {
-    if (toggle_count != 0) {
+    if (toggle_count > 0) {
         if (make_sound) {
             *tone_PINx_reg = tone_pin_bitmask;  // toggle the pin
         }
         toggle_count--;
         return;
     }
-    if (!alarm_pattern) {
-        // Duration expired
-        dodecaNoTone();
-        return;
-    }
 
-    // Playing an alarm pattern
-
-    toggle_count = initial_toggle_count;  // Reset
-
-    // Handle states:
-
-    if (!beep_period_silence) {
-        // Was playing beep, now should play silence.
-        make_sound = false;
-        digitalWrite(TONE_PIN, LOW);
-    } else {
-        // Was silent, now make sound (if not on a sequence of silences).
-        make_sound = !beep_seq_silence;
-        remaining_beeps--;
-    }
-    beep_period_silence = !beep_period_silence;
-
-    if (remaining_beeps == 0) {
-        if (!beep_seq_silence) {
-            // Was playing a sequence of beeps, now play a sequence of silences.
-            make_sound = false;
-            digitalWrite(TONE_PIN, LOW);
+    // Finished a single tone
+    long raw_tone = pgm_read_dword(next_tone++);
+    Tone& tone = reinterpret_cast<Tone&>(raw_tone);
+    if (tone.dur == 0) {
+        if (tone.freq == 0) {
+            // Finish playing
+            dodecaToneStop();
+            return;
         } else {
-            // Was silent, now make sound.
-            make_sound = true;
+            // Loop
+            next_tone = first_tone;
+            raw_tone = pgm_read_dword(next_tone++);
         }
-        beep_seq_silence = !beep_seq_silence;
-        remaining_beeps = NUMBER_OF_BEEPS;
     }
+    dodecaTone(tone.freq, tone.dur);
 }

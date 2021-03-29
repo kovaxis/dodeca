@@ -539,7 +539,7 @@ static bool change_face(const Vec3<int> &acc) {
     }
     current_face = active_normal;
 
-    dodecaTone(BOP_FREQUENCY, BOP_DURATION);
+    dodecaTonePlay(BOP_SEQUENCE);
     timer_expired = false;
 
     return true;
@@ -608,7 +608,7 @@ static void deep_sleep(Vec3<int> &cur_acc) {
     // If because of a software bug, clock is halted while TONE_PIN is HIGH,
     // buzzer could be burned. This ensures that the pin is LOW and won't be
     // turned HIGH:
-    dodecaNoTone();
+    dodecaToneStop();
 
     // Enter atmega328p deep sleep until the accelerometer interrupt wakes us up
     // Note that adc was already turned off at setup. The `LowPower` library is
@@ -729,7 +729,7 @@ void loop() {
 
             if (!timer_expired) {
                 timer_expired = true;
-                dodecaAlarm();
+                dodecaTonePlay(BEEP_SEQUENCE);
                 // Alarm tone is turned off by playing BOP sound
             }
         } else {
