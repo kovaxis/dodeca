@@ -18,6 +18,7 @@ else:
     name = os.path.splitext(sys.argv[1])[0]
     make_r90 = False
 
+
 def make_font(images, flavor):
     for image in images:
         print(" ", end="")
@@ -56,5 +57,5 @@ if make_r90:
     for i in range(len(images)):
         images[i] = images[i].transpose(Image.ROTATE_270)
     make_font(images, "DATA_R90")
-    
+
 print("};")

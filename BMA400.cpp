@@ -7,8 +7,7 @@
 #include "BMA400.h"
 #include "Wire.h"
 
-enum Register
-{
+enum Register {
     REG_CHIP_ID = 0x00,
     REG_STATUS = 0x03,
 
@@ -36,29 +35,25 @@ enum Register
     REG_WKUP_INT_CONFIG4 = 0x33,
 };
 
-BlueDot_BMA400::BlueDot_BMA400(uint8_t i2c_address)
-{
+BlueDot_BMA400::BlueDot_BMA400(uint8_t i2c_address) {
     this->i2c_address = i2c_address;
 }
 
-uint8_t BlueDot_BMA400::init(void)
-{
+uint8_t BlueDot_BMA400::init(void) {
     Wire.begin();
 
     return checkID();
 }
 //##########################################################################
-//SET UP FUNCTIONS
+// SET UP FUNCTIONS
 //##########################################################################
-uint8_t BlueDot_BMA400::checkID(void)
-{
+uint8_t BlueDot_BMA400::checkID(void) {
     uint8_t chipID;
     chipID = readByte(REG_CHIP_ID);
     return chipID;
 }
 //##########################################################################
-void BlueDot_BMA400::setPowerMode(uint8_t power_mode)
-{
+void BlueDot_BMA400::setPowerMode(uint8_t power_mode) {
     uint8_t reg;
     reg = readByte(REG_ACC_CONFIG0);
     reg = reg & 0b11111100;
@@ -67,8 +62,7 @@ void BlueDot_BMA400::setPowerMode(uint8_t power_mode)
     writeByte(REG_ACC_CONFIG0, reg);
 }
 //##########################################################################
-void BlueDot_BMA400::setMeasurementRange(uint8_t range)
-{
+void BlueDot_BMA400::setMeasurementRange(uint8_t range) {
     uint8_t reg;
     reg = readByte(REG_ACC_CONFIG1);
     reg = reg & 0b00111111;
@@ -77,8 +71,7 @@ void BlueDot_BMA400::setMeasurementRange(uint8_t range)
     writeByte(REG_ACC_CONFIG1, reg);
 }
 //##########################################################################
-void BlueDot_BMA400::setOutputDataRate(uint8_t data_rate)
-{
+void BlueDot_BMA400::setOutputDataRate(uint8_t data_rate) {
     uint8_t reg;
     reg = readByte(REG_ACC_CONFIG1);
     reg = reg & 0b11110000;
@@ -87,8 +80,7 @@ void BlueDot_BMA400::setOutputDataRate(uint8_t data_rate)
     writeByte(REG_ACC_CONFIG1, reg);
 }
 //##########################################################################
-void BlueDot_BMA400::setOversamplingRate(uint8_t osr)
-{
+void BlueDot_BMA400::setOversamplingRate(uint8_t osr) {
     uint8_t reg;
     reg = readByte(REG_ACC_CONFIG1);
     reg = reg & 0b11001111;
@@ -100,12 +92,15 @@ void BlueDot_BMA400::setOversamplingRate(uint8_t osr)
 // Enables wakeup interrupts on the INT1 pin.
 // `sample_count`: Samples required to generate an interrupt. [1, 8]
 // `refupdate`: The auto reference update mode (see `RefUpdate`).
-// `open_drive`: If `true`, leaves the pin floating while inactive. The pin is always pushed/pulled
+// `open_drive`: If `true`, leaves the pin floating while inactive. The pin is
+// always pushed/pulled
 //      when active.
-// `active_high`: If `true`, the pin is pushed high when active. If `false`, the pin is pulled low
+// `active_high`: If `true`, the pin is pushed high when active. If `false`, the
+// pin is pulled low
 //      when active.
-void BlueDot_BMA400::enableWakeupInterrupts(uint8_t sample_count, uint8_t refupdate, bool open_drive, bool active_high)
-{
+void BlueDot_BMA400::enableWakeupInterrupts(uint8_t sample_count,
+                                            uint8_t refupdate, bool open_drive,
+                                            bool active_high) {
     // AUTOWAKEUP_0: AAAA AAAA
     //  - A: Wakeup timeout MSB
     writeByte(REG_AUTOWAKEUP_0, 0x00);
@@ -125,7 +120,8 @@ void BlueDot_BMA400::enableWakeupInterrupts(uint8_t sample_count, uint8_t refupd
     //    0b00: Manual update
     //    0b01: Update once
     //    0b10: Update at 25Hz, requiring fast movement to wake up
-    writeByte(REG_WKUP_INT_CONFIG0, 0b11100000 | ((sample_count - 1) << 2) | refupdate);
+    writeByte(REG_WKUP_INT_CONFIG0,
+              0b11100000 | ((sample_count - 1) << 2) | refupdate);
 
     // INT1_MAP: ABCD EFGH
     //  - A: Map data-ready interrupt to INT1
@@ -148,8 +144,7 @@ void BlueDot_BMA400::enableWakeupInterrupts(uint8_t sample_count, uint8_t refupd
 
 // Set the wakeup interrupt threshold.
 // `threshold`: [0, 2047] corresponds to [0, max_range].
-void BlueDot_BMA400::setWakeupThreshold(uint16_t threshold)
-{
+void BlueDot_BMA400::setWakeupThreshold(uint16_t threshold) {
     // WKUP_INT_CONFIG1: AAAA AAAA
     //  - A: Wakeup threshold (8 most-significant bits)
     writeByte(REG_WKUP_INT_CONFIG1, threshold >> 4);
@@ -157,8 +152,7 @@ void BlueDot_BMA400::setWakeupThreshold(uint16_t threshold)
 
 // Set the wakeup reference.
 // `x`, `y`, `z`: [-2048, 2047] correspond to [-max_range, +max_range].
-void BlueDot_BMA400::setWakeupRef(uint16_t x, uint16_t y, uint16_t z)
-{
+void BlueDot_BMA400::setWakeupRef(uint16_t x, uint16_t y, uint16_t z) {
     // WKUP_INT_CONFIG2: AAAA AAAA
     //  - A: Wakeup reference X (8 most-significant bits)
     writeByte(REG_WKUP_INT_CONFIG2, x >> 4);
@@ -170,8 +164,7 @@ void BlueDot_BMA400::setWakeupRef(uint16_t x, uint16_t y, uint16_t z)
     writeByte(REG_WKUP_INT_CONFIG4, z >> 4);
 }
 //##########################################################################
-uint8_t BlueDot_BMA400::readPowerMode(void)
-{
+uint8_t BlueDot_BMA400::readPowerMode(void) {
     uint8_t value;
     value = readByte(REG_STATUS);
     value = value & 0b00000110;
@@ -180,8 +173,7 @@ uint8_t BlueDot_BMA400::readPowerMode(void)
     return value;
 }
 //##########################################################################
-uint8_t BlueDot_BMA400::readMeasurementRange(void)
-{
+uint8_t BlueDot_BMA400::readMeasurementRange(void) {
     uint8_t value;
     value = readByte(REG_ACC_CONFIG1);
     value = value & 0b11000000;
@@ -190,8 +182,7 @@ uint8_t BlueDot_BMA400::readMeasurementRange(void)
     return value;
 }
 //##########################################################################
-uint8_t BlueDot_BMA400::readOutputDataRate(void)
-{
+uint8_t BlueDot_BMA400::readOutputDataRate(void) {
     uint8_t value;
     value = readByte(REG_ACC_CONFIG1);
     value = value & 0b00001111;
@@ -199,8 +190,7 @@ uint8_t BlueDot_BMA400::readOutputDataRate(void)
     return value;
 }
 //##########################################################################
-uint8_t BlueDot_BMA400::readOversamplingRate(void)
-{
+uint8_t BlueDot_BMA400::readOversamplingRate(void) {
     uint8_t value;
     value = readByte(REG_ACC_CONFIG1);
     value = value & 0b00110000;
@@ -209,10 +199,9 @@ uint8_t BlueDot_BMA400::readOversamplingRate(void)
     return value;
 }
 //##########################################################################
-//DATA READ FUNCTIONS
+// DATA READ FUNCTIONS
 //##########################################################################
-void BlueDot_BMA400::readData(void)
-{
+void BlueDot_BMA400::readData(void) {
     uint8_t rawData[6];
     Wire.beginTransmission(i2c_address);
     Wire.write(REG_ACC_X_LSB);
@@ -231,18 +220,16 @@ void BlueDot_BMA400::readData(void)
     raw_acc_z = ((acc_z_lsb | ((int)acc_z_msb << 8)) << 4) >> 4;
 }
 //##########################################################################
-//BASIC FUNCTIONS
+// BASIC FUNCTIONS
 //##########################################################################
-void BlueDot_BMA400::writeByte(uint8_t reg, uint8_t value)
-{
+void BlueDot_BMA400::writeByte(uint8_t reg, uint8_t value) {
     Wire.beginTransmission(i2c_address);
     Wire.write(reg);
     Wire.write(value);
     Wire.endTransmission();
 }
 //##########################################################################
-uint8_t BlueDot_BMA400::readByte(uint8_t reg)
-{
+uint8_t BlueDot_BMA400::readByte(uint8_t reg) {
     uint8_t value;
     Wire.beginTransmission(i2c_address);
     Wire.write(reg);

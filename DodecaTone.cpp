@@ -1,4 +1,5 @@
-// From Arduino core Tone.cpp, modified and specialized to produce the alarm beep pattern.
+// From Arduino core Tone.cpp, modified and specialized to produce the alarm
+// beep pattern.
 
 #include "common.h"
 
@@ -8,7 +9,8 @@ volatile uint8_t tone_pin_bitmask;
 void dodecaToneSetup() {
     digitalWrite(TONE_PIN, LOW);
     pinMode(TONE_PIN, OUTPUT);
-    // Warning: constant output HIGH could burn the buzzer! (there's no DC blocking capacitor)
+    // Warning: constant output HIGH could burn the buzzer! (there's no DC
+    // blocking capacitor)
 
     // Precompute this for quick toggling (so ISR is short)
     uint8_t port = digitalPinToPort(TONE_PIN);
@@ -36,34 +38,28 @@ void dodecaTone(unsigned int frequency, unsigned long duration) {
     // 8 bit timer, scan through prescalars to find the best fit
     ocr = F_CPU / frequency / 2 - 1;
     prescalarbits = 0b001;  // ck/1: same for both timers
-    if (ocr > 255)
-    {
+    if (ocr > 255) {
         ocr = F_CPU / frequency / 2 / 8 - 1;
         prescalarbits = 0b010;  // ck/8: same for both timers
 
-        if (ocr > 255)
-        {
+        if (ocr > 255) {
             ocr = F_CPU / frequency / 2 / 32 - 1;
             prescalarbits = 0b011;
         }
 
-        if (ocr > 255)
-        {
+        if (ocr > 255) {
             ocr = F_CPU / frequency / 2 / 64 - 1;
             prescalarbits = 0b100;
 
-            if (ocr > 255)
-            {
+            if (ocr > 255) {
                 ocr = F_CPU / frequency / 2 / 128 - 1;
                 prescalarbits = 0b101;
             }
 
-            if (ocr > 255)
-            {
+            if (ocr > 255) {
                 ocr = F_CPU / frequency / 2 / 256 - 1;
                 prescalarbits = 0b110;
-                if (ocr > 255)
-                {
+                if (ocr > 255) {
                     // can't do any better than /1024
                     ocr = F_CPU / frequency / 2 / 1024 - 1;
                     prescalarbits = 0b111;
@@ -96,7 +92,7 @@ void dodecaAlarm() {
 }
 
 void dodecaNoTone() {
-    bitWrite(TIMSK2, OCIE2A, 0); // disable interrupt
+    bitWrite(TIMSK2, OCIE2A, 0);  // disable interrupt
     TCCR2A = (1 << WGM20);
     TCCR2B = (TCCR2B & 0b11111000) | (1 << CS22);
     OCR2A = 0;
@@ -120,7 +116,7 @@ ISR(TIMER2_COMPA_vect) {
 
     // Playing an alarm pattern
 
-    toggle_count = initial_toggle_count;    // Reset
+    toggle_count = initial_toggle_count;  // Reset
 
     // Handle states:
 

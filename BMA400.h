@@ -4,23 +4,20 @@
 
 #define BMA400_CHIP_ID 0x90
 
-enum PowerMode
-{
+enum PowerMode {
     BMA400_SLEEP = 0x0,
     BMA400_LOWPOWER = 0x1,
     BMA400_NORMAL = 0x2,
 };
 
-enum Range
-{
+enum Range {
     BMA400_2G = 0x0,
     BMA400_4G = 0x1,
     BMA400_8G = 0x2,
     BMA400_16G = 0x3,
 };
 
-enum DataRate
-{
+enum DataRate {
     BMA400_12_5HZ = 0x5,
     BMA400_25HZ = 0x6,
     BMA400_50HZ = 0x7,
@@ -30,24 +27,21 @@ enum DataRate
     BMA400_800HZ = 0xb,
 };
 
-enum Oversampling
-{
+enum Oversampling {
     BMA400_OSR_LOWEST = 0x0,
     BMA400_OSR_LOW = 0x1,
     BMA400_OSR_HIGH = 0x2,
     BMA400_OSR_HIGHEST = 0x3,
 };
 
-enum RefUpdate
-{
+enum RefUpdate {
     BMA400_MANUAL,
     BMA400_ONCE,
     BMA400_CONTINUOUS,
 };
 
-class BlueDot_BMA400
-{
-public:
+class BlueDot_BMA400 {
+   public:
     uint8_t i2c_address;
     int16_t raw_acc_x;
     int16_t raw_acc_y;
@@ -62,7 +56,8 @@ public:
     void setOutputDataRate(uint8_t data_rate);
     void setOversamplingRate(uint8_t osr);
 
-    void enableWakeupInterrupts(uint8_t sample_count, uint8_t refupdate, bool open_drive, bool active_high);
+    void enableWakeupInterrupts(uint8_t sample_count, uint8_t refupdate,
+                                bool open_drive, bool active_high);
     void setWakeupThreshold(uint16_t thres);
     void setWakeupRef(uint16_t x, uint16_t y, uint16_t z);
 
