@@ -7,6 +7,7 @@
 #include "LowPower.h"
 #include "T4K/T4K.h"
 #include "common.h"
+#include "melody.h"
 #include "screen.h"
 
 #ifndef cbi

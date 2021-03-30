@@ -80,60 +80,6 @@ const int MAX_AVG_DEVIATION = 20;
 // Faces are about 1g apart from each other.
 const int MIN_FACE_DIST = 700;
 
-// ---- Sound behaviour ----
-
-// Frequency for a BOP sound.
-const unsigned int BOP_FREQUENCY = 427;
-
-/*
-________███████████________
-        <-BOP_DUR->
-*/
-// Duration of BOP sound, in milliseconds.
-const unsigned long BOP_DURATION = 70;
-
-const PROGMEM Tone FACECHANGE_SEQUENCE[] = {
-    {BOP_FREQUENCY, BOP_DURATION},
-    TONE_STOP,
-};
-
-// Frequency for a BEEP sound.
-const unsigned int BEEP_FREQUENCY = 1894;
-
-// Low battery sound
-const PROGMEM Tone LOWBATTERY_SEQUENCE[] = {
-    {784, 125}, {392, 250}, {0, 125}, {784, 125}, {392, 250}, TONE_STOP,
-};
-
-// Charging sound
-const PROGMEM Tone CHARGING_SEQUENCE[] = {
-    {698, 187}, {0, 63}, {659, 125}, {523, 375}, TONE_STOP,
-};
-
-/*
-
-       BEEP_LEN
-        <---->
-________██████______██████______██████______██████______________________________________________________██████______██████___...
-        <-BEEP_PER-><-BEEP_PER-><-BEEP_PER-><-BEEP_PER-><----------------------------------------------><-BEEP_PER-><-BEEP_PER->
-
-        <--------------BEEP_SEQ_DURATION---------------><--------------BEEP_SEQ_DURATION---------------><--------------...
-*/
-
-// How long a beep sequence is.
-const int BEEP_SEQ_DURATION = 500;
-
-const int BEEP_PERIOD = BEEP_SEQ_DURATION / 4;
-const int BEEP_LEN = BEEP_PERIOD * 4 / 8;
-
-const Tone BEEP_TONE = {BEEP_FREQUENCY, BEEP_LEN};
-const Tone BEEP_SILENCE = {0, BEEP_PERIOD - BEEP_LEN};
-
-const PROGMEM Tone ALARM_SEQUENCE[] = {
-    BEEP_TONE,    BEEP_SILENCE, BEEP_TONE,    BEEP_SILENCE,           BEEP_TONE,
-    BEEP_SILENCE, BEEP_TONE,    BEEP_SILENCE, {0, BEEP_SEQ_DURATION}, TONE_LOOP,
-};
-
 // ---- Sleep behaviour ----
 
 // After how many milliseconds still in a home position to go to sleep.
