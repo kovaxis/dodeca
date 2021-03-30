@@ -26,6 +26,8 @@ static bool timer_expired = false;
 static Vec3<int> rollavg_buf[ROLLAVG_LEN];
 static byte rollavg_idx = 0;
 static int low_battery_frames = -1;
+static volatile bool battery_dirty = true;
+static BatStatus battery_status = BAT_NOT_CHARGING;
 
 #ifdef DISPLAY_VOLTAGE_ON_SCREEN
 static int battery_display_voltage = 0;
@@ -177,8 +179,8 @@ void setup() {
 
     pinMode(BATTERY_CHARGING_PIN, INPUT_PULLUP);
     pinMode(BATTERY_CHARGED_PIN, INPUT_PULLUP);
-    enableInterrupt(BATTERY_CHARGING_PIN, on_wakeup, CHANGE);
-    enableInterrupt(BATTERY_CHARGED_PIN, on_wakeup, CHANGE);
+    enableInterrupt(BATTERY_CHARGING_PIN, on_battery_wakeup, CHANGE);
+    enableInterrupt(BATTERY_CHARGED_PIN, on_battery_wakeup, CHANGE);
 
 #ifdef DEBUG_LED
     pinMode(DEBUG_LED, OUTPUT);
@@ -296,6 +298,11 @@ void setup() {
 
 static void on_wakeup() {
     // Do nothing. The chip stops sleeping and everything is handled in loop().
+}
+
+static void on_battery_wakeup() {
+    // Make sure the main loop checks the battery state by marking a flag.
+    battery_dirty = true;
 }
 
 static void face_to_normal(byte face, Vec3<int> *normal) {
@@ -706,22 +713,40 @@ void loop() {
     // Whether the current measures can be trusted, or otherwise are just noise
     bool reliable = change_face(acc);
 
+    // Update battery status
+    {
+        noInterrupts();
+        bool update_bat = battery_dirty;
+        battery_dirty = false;
+        interrupts();
+        if (update_bat) {
+            BatStatus new_status = get_charge_status();
+            if (battery_status == BAT_NOT_CHARGING &&
+                new_status != BAT_NOT_CHARGING) {
+                dodecaTonePlay(CHARGING_SEQUENCE);
+            } else if (battery_status != BAT_NOT_CHARGING &&
+                       new_status == BAT_NOT_CHARGING) {
+                dodecaTonePlay(NOTCHARGING_SEQUENCE);
+            }
+            battery_status = new_status;
+        }
+    }
+
     // Act based on current face
     if (is_home_face(current_face)) {
         // Home face
 
-        BatStatus bat_status = get_charge_status();
-        if (bat_status == BAT_NOT_CHARGING) {
+        if (battery_status == BAT_NOT_CHARGING) {
             select_screen(0);
         } else {
             select_screen(face_to_screen(current_face));
             scr_clear();
-            scr_draw_bat_sprite(bat_status);
+            scr_draw_bat_sprite(battery_status);
             scr_show();
             oled.on();
         }
 
-        if (!reliable) {
+        if (!reliable || tone_playing) {
             timer_ref = Instant();
         }
         if (timer_ref.elapsed().gt(SLEEP_TIMEOUT)) {

@@ -3,6 +3,7 @@
 
 #include "common.h"
 
+extern volatile bool tone_playing;
 void dodecaToneSetup(void);
 void dodecaTonePlay(Tone* sequence);
 void dodecaToneStop(void);

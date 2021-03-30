@@ -18,6 +18,7 @@ void dodecaToneSetup() {
     tone_pin_bitmask = digitalPinToBitMask(TONE_PIN);
 }
 
+volatile bool tone_playing = false;
 static volatile unsigned long toggle_count;
 static volatile bool make_sound;
 static volatile Tone* first_tone;
@@ -88,6 +89,7 @@ void dodecaToneStop() {
     OCR2A = 0;
 
     digitalWrite(TONE_PIN, LOW);
+    tone_playing = false;
 }
 
 void dodecaTonePlay(Tone* sequence) {
@@ -97,6 +99,7 @@ void dodecaTonePlay(Tone* sequence) {
     Tone& tone = reinterpret_cast<Tone&>(raw_tone);
     next_tone = sequence;
     dodecaTone(tone.freq, tone.dur);
+    tone_playing = true;
     interrupts();
 }
 
