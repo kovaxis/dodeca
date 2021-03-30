@@ -18,6 +18,10 @@ if len(files) <= 0:
     print(f"No midi files found in directory \"{directory}\"")
     exit()
 
+# Add a couple of blank lines to make copying easier
+print()
+print()
+
 for path in files:
     file_name = os.path.splitext(path)[0]
     mid = MidiFile(directory+"/"+path)
@@ -78,6 +82,8 @@ for path in files:
         out.append((0, 0))
 
     # Print out converted MIDI
+    length = sum(map(lambda pair: pair[1], out))
+    print(f"// Generated from \"{path}\" ({length}ms long)")
     print(f"const PROGMEM Tone {file_name.upper()}_SEQUENCE[] = {{")
     for pair in out:
         print(f"    {{{pair[0]}, {pair[1]}}},")

@@ -5,24 +5,29 @@
 
 #include "common.h"
 
+// Generated from "alarm.midi" (1000ms long)
 const PROGMEM Tone ALARM_SEQUENCE[] = {
     {1865, 62}, {0, 63},    {1865, 62}, {0, 63}, {1865, 62},
     {0, 63},    {1865, 62}, {0, 563},   {1, 0},
 };
 
+// Generated from "charging.midi" (624ms long)
 const PROGMEM Tone CHARGING_SEQUENCE[] = {
     {523, 124}, {0, 126}, {440, 125}, {349, 125}, {659, 124}, {0, 0},
 };
 
+// Generated from "facechange.midi" (62ms long)
 const PROGMEM Tone FACECHANGE_SEQUENCE[] = {
     {415, 62},
     {0, 0},
 };
 
+// Generated from "lowbattery.midi" (1747ms long)
 const PROGMEM Tone LOWBATTERY_SEQUENCE[] = {
     {784, 250}, {392, 497}, {0, 253}, {784, 250}, {392, 497}, {0, 0},
 };
 
+// Generated from "notcharging.midi" (374ms long)
 const PROGMEM Tone NOTCHARGING_SEQUENCE[] = {
     {440, 125},
     {349, 125},
@@ -30,13 +35,15 @@ const PROGMEM Tone NOTCHARGING_SEQUENCE[] = {
     {0, 0},
 };
 
+// Generated from "shutdown.midi" (1648ms long)
 const PROGMEM Tone SHUTDOWN_SEQUENCE[] = {
-    {831, 300}, {622, 300}, {415, 300}, {466, 1498}, {0, 0},
+    {831, 300}, {622, 300}, {415, 300}, {466, 748}, {0, 0},
 };
 
+// Generated from "startup.midi" (2398ms long)
 const PROGMEM Tone STARTUP_SEQUENCE[] = {
-    {622, 525}, {311, 75},   {466, 300}, {415, 600},
-    {622, 300}, {466, 1198}, {0, 0},
+    {622, 373}, {0, 152},   {311, 75}, {466, 148}, {0, 152}, {415, 448},
+    {0, 152},   {622, 148}, {0, 152},  {466, 598}, {0, 0},
 };
 
 #endif
