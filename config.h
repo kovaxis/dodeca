@@ -192,6 +192,14 @@ const int LOW_BATTERY_BLINK_PERIOD = 8;
 // For how many frames to keep the battery icon on.
 const int LOW_BATTERY_BLINK_ONFRAMES = 6;
 
+// ---- Power properties ----
+
+// For how many milliseconds to display the shutdown animation.
+const int POWER_SHUTDOWN_DURATION = 2500;
+
+// For how many milliseconds to display the powerup animation.
+const int POWER_STARTUP_DURATION = 2500;
+
 // ---- Face properties ----
 
 const int NORMAL_COUNT = 6;

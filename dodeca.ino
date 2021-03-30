@@ -6,6 +6,7 @@
 #include "DodecaTone.h"
 #include "LowPower.h"
 #include "T4K/T4K.h"
+#include "bitmaps.h"
 #include "common.h"
 #include "melody.h"
 #include "screen.h"
@@ -28,6 +29,8 @@ static byte rollavg_idx = 0;
 static int low_battery_frames = -1;
 static volatile bool battery_dirty = true;
 static BatStatus battery_status = BAT_NOT_CHARGING;
+static volatile bool switch_dirty = false;
+static PowerStatus power_status = POWER_ON;
 
 #ifdef DISPLAY_VOLTAGE_ON_SCREEN
 static int battery_display_voltage = 0;
@@ -76,7 +79,7 @@ static void drawScreen(int seconds, bool show) {
         // Draw low battery indicator instead of the normal timer
         if (low_battery_frames == 0) {
             scr_clear();
-            scr_draw_bat_sprite(BAT_LOW);
+            scr_draw_sprite(&LOWBAT_SPRITE);
             scr_show();
         }
 
@@ -181,6 +184,9 @@ void setup() {
     pinMode(BATTERY_CHARGED_PIN, INPUT_PULLUP);
     enableInterrupt(BATTERY_CHARGING_PIN, on_battery_wakeup, CHANGE);
     enableInterrupt(BATTERY_CHARGED_PIN, on_battery_wakeup, CHANGE);
+
+    pinMode(SWITCH_PIN, INPUT);
+    enableInterrupt(SWITCH_PIN, on_switch_wakeup, CHANGE);
 
 #ifdef DEBUG_LED
     pinMode(DEBUG_LED, OUTPUT);
@@ -305,6 +311,11 @@ static void on_battery_wakeup() {
     battery_dirty = true;
 }
 
+static void on_switch_wakeup() {
+    // Make sure the main loop checks the switch state by marking a flag.
+    switch_dirty = true;
+}
+
 static void face_to_normal(byte face, Vec3<int> *normal) {
     if (face < NORMAL_COUNT) {
         memcpy_P(normal, NORMALS + face, sizeof(Vec3<int>));
@@ -324,6 +335,23 @@ static int face_to_screen(byte face) {
 
 static bool is_home_face(byte face) {
     return face == 0 || face == NORMAL_COUNT || face == disabled_face;
+}
+
+static const Sprite *bat_status_to_sprite(BatStatus status) {
+    switch (status) {
+        case BAT_LOW:
+            return &LOWBAT_SPRITE;
+        case BAT_CHARGING:
+            return &CHARGING_SPRITE;
+        case BAT_CHARGED:
+            return &FULLBAT_SPRITE;
+#ifdef DEBUG_SERIAL
+        default:
+            Serial.print(F("ERROR: attempting to draw bat_status="));
+            Serial.println(battery_status, HEX);
+            return &POWER_SPRITE;
+#endif
+    }
 }
 
 // Taken from the Arduino source for `analogRead` from `wiring_analog.c`.
@@ -655,6 +683,38 @@ static void deep_sleep(Vec3<int> &cur_acc) {
     timer_ref = Instant();
 }
 
+static void power_off_sleep() {
+    // Shutdown status LED
+#ifdef DEBUG_LED
+    digitalWrite(DEBUG_LED, LOW);
+#endif
+
+    // Stop any playing tone.
+    dodecaToneStop();
+
+    // Shutdown screens
+    select_screen(0);
+
+    // Shutdown accelerometer
+    bma400.setPowerMode(BMA400_SLEEP);
+
+    // Enter atmega328p deep sleep until the power button is pressed again. The
+    // `LowPower` library is passed an `ADC_ON` value so that it doesn't turn
+    // them back on after sleeping.
+    LowPower.powerDown(SLEEP_FOREVER, ADC_ON, BOD_OFF);
+
+    // Ramp up the accelerometer
+    bma400.setPowerMode(BMA400_NORMAL);
+
+    // Turn LED back on
+#ifdef DEBUG_LED
+    digitalWrite(DEBUG_LED, HIGH);
+#endif
+
+    // Refresh timer reference, since no timekeeping is done while deep-sleeping
+    timer_ref = Instant();
+}
+
 void loop() {
     // Throttle reads
     {
@@ -700,6 +760,68 @@ void loop() {
             next_read.delayed_by(Duration::from_millis(1000 / READ_RATE));
     }
 
+    // Check on/off switch state
+    {
+        noInterrupts();
+        bool check_switch = switch_dirty;
+        switch_dirty = false;
+        interrupts();
+        if (check_switch) {
+            if (!digitalRead(SWITCH_PIN)) {
+                // Shut down/power up dodecahedron
+                switch (power_status) {
+                    case POWER_ON:
+                        power_status = POWER_SHUTDOWN;
+                        dodecaTonePlay(SHUTDOWN_SEQUENCE);
+                        timer_ref = Instant();
+                        break;
+                    case POWER_OFF:
+                        power_status = POWER_STARTUP;
+                        dodecaTonePlay(STARTUP_SEQUENCE);
+                        timer_ref = Instant();
+                        break;
+                    default:
+                        // Do nothing while in transition.
+                        break;
+                }
+            }
+        }
+    }
+    switch (power_status) {
+        case POWER_SHUTDOWN:
+            if (timer_ref.elapsed().gt(POWER_SHUTDOWN_DURATION)) {
+                // Go to sleep
+                power_status = POWER_OFF;
+            } else {
+                select_screen(face_to_screen(current_face));
+                scr_clear();
+                scr_draw_sprite(&POWER_SPRITE);
+                scr_show();
+                oled.on();
+            }
+            return;
+        case POWER_STARTUP:
+            if (timer_ref.elapsed().gt(POWER_STARTUP_DURATION)) {
+                // Wake up
+                power_status = POWER_ON;
+                break;
+            } else {
+                select_screen(face_to_screen(current_face));
+                scr_clear();
+                scr_draw_sprite(&POWER_SPRITE);
+                scr_show();
+                oled.on();
+            }
+            return;
+        case POWER_OFF:
+            // Just sleep endlessly
+            power_off_sleep();
+            return;
+        default:
+            // Powered on!
+            break;
+    }
+
     // Read accelerometer
     bma400.readData();
     Vec3<int> acc =
@@ -739,9 +861,10 @@ void loop() {
         if (battery_status == BAT_NOT_CHARGING) {
             select_screen(0);
         } else {
+            // Draw sprite
             select_screen(face_to_screen(current_face));
             scr_clear();
-            scr_draw_bat_sprite(battery_status);
+            scr_draw_sprite(bat_status_to_sprite(battery_status));
             scr_show();
             oled.on();
         }

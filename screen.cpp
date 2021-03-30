@@ -22,17 +22,6 @@ typedef struct {
     const byte *data;
 } Font;
 
-typedef struct {
-    // Dimensions of the sprite.
-    byte width;
-    byte height;
-    // Default position of the sprite.
-    byte default_x;
-    byte default_y;
-    // Pointer to sprite data in PROGMEM
-    const byte *data;
-} Sprite;
-
 const PROGMEM Font FONT_00 = {
     // Width, height
     8,
@@ -85,18 +74,6 @@ const PROGMEM Font FONT_45 = {
     // Characters: "0123456789:" (11*2 characters)
     // Character dimensions: 14x14 (25 bytes each)
     FONT_45_DATA,
-};
-
-const PROGMEM Sprite LOWBAT_SPRITE = {
-    29, 16, 10, 16, LOWBAT_DATA,
-};
-
-const PROGMEM Sprite FULLBAT_SPRITE = {
-    29, 16, 10, 16, FULLBAT_DATA,
-};
-
-const PROGMEM Sprite CHARGING_SPRITE = {
-    29, 16, 10, 16, CHARGING_DATA,
 };
 
 static byte buffer_mem[2 * SCRBUF_WIDTH * SCRBUF_PAGES];
@@ -162,25 +139,7 @@ void draw_upsidedown(int width, int height, int base_x, int base_y,
     }
 }
 
-void scr_draw_bat_sprite(BatStatus bat_status) {
-    const Sprite *src_sprite;
-    switch (bat_status) {
-        case BAT_LOW:
-            src_sprite = &LOWBAT_SPRITE;
-            break;
-        case BAT_CHARGING:
-            src_sprite = &CHARGING_SPRITE;
-            break;
-        case BAT_CHARGED:
-            src_sprite = &FULLBAT_SPRITE;
-            break;
-#ifdef DEBUG_SERIAL
-        default:
-            Serial.print(F("ERROR: attempting to draw bat_status="));
-            Serial.println(bat_status, HEX);
-#endif
-    }
-
+void scr_draw_sprite(const Sprite *src_sprite) {
     Sprite sprite;
     byte data[MAX_SPRITE_SIZE];
     memcpy_P(&sprite, src_sprite, sizeof(Sprite));

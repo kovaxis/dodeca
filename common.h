@@ -96,12 +96,34 @@ enum BatStatus {
     BAT_NOT_CHARGING,
 };
 
+enum PowerStatus {
+    POWER_ON,
+    POWER_SHUTDOWN,
+    POWER_OFF,
+    POWER_STARTUP,
+};
+
+// A single frequency-duration pair.
+//
+// A frequency of 0 indicates no sound.
+// A frequency of 0 with duration 0 indicates the end of a tone sequence.
+// A non-zero frequency with duration 0 indicates that the tone sequence should
+// loop.
 struct Tone {
     unsigned int freq;
     unsigned int dur;
 };
-const Tone TONE_STOP = {0, 0};
-const Tone TONE_LOOP = {1, 0};
+
+typedef struct {
+    // Dimensions of the sprite.
+    byte width;
+    byte height;
+    // Default position of the sprite.
+    byte default_x;
+    byte default_y;
+    // Pointer to sprite data in PROGMEM
+    const byte *data;
+} Sprite;
 
 #include "config.h"
 #include "timekeep.h"
