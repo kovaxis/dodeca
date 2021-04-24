@@ -2,6 +2,7 @@
 /* [Toggles] */
 render_bottom = true;
 render_top = true;
+usb_box_cover = true;
 debug_render_screen = false;
 
 /* [Dimensions] */
@@ -31,6 +32,11 @@ usb_height = 21;
 usb_gap = 1.6;
 usb_port_offset = 1;
 usb_port_scale = 1.1;
+
+/* [USB cover] */
+usbcover_wall = 2;
+usbcover_pingap = 6;
+usbcover_extra_width = 0.5;
 
 /* [Button] */
 but_offset = [17, -4];
@@ -225,6 +231,7 @@ module shell_bottom() {
     }
 }
 
+// Bottom half of dodecahedron
 if (render_bottom) {
     //Solid
     shell_bottom();
@@ -250,6 +257,7 @@ if (render_bottom) {
     }
 }
 
+// Top half of dodecahedron
 if (render_top) {
     //Solid
     mirror([0, 0, 1])
@@ -293,5 +301,13 @@ if (render_top) {
             }
         }
         dodeca_mask(thickness + fit_tol, dtol);
+    }
+}
+
+// Usb box cover
+if (usb_box_cover) {
+    translate([0, usb_offset, -inradius + thickness]) {
+        translate([-usb_width / 2 - usbcover_extra_width - usb_wall, -usb_thickness-dtol-usbcover_wall, scr_thickness])
+        cube([usb_width + usb_wall * 2 + usbcover_extra_width*2, usbcover_wall, usb_height-usbcover_pingap-scr_thickness]);
     }
 }
