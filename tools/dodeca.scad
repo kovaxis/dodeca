@@ -10,7 +10,7 @@ thickness = 2;
 
 /* [Buzzer] */
 buz = 12;
-buz_hole = 4;
+buz_hole = 3;
 buz_offset = -17;
 
 /* [Screen] */
@@ -19,7 +19,7 @@ scr_center = 9;
 scr_close = 9;
 scr_far = 9;
 scr_width = 25;
-scr_thickness = 4;
+scr_thickness = 5;
 
 /* [USB] */
 usb_offset = 18;
@@ -37,7 +37,7 @@ but_offset = [17, -4];
 but_length = 7;
 but_width = 4.4;
 but_height = 5.6;
-but_hole = 2.4;
+but_hole = 1.8;
 but_backwall = 2;
 but_wall = 2;
 
