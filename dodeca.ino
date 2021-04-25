@@ -185,7 +185,7 @@ void setup() {
     enableInterrupt(BATTERY_CHARGING_PIN, on_battery_wakeup, CHANGE);
     enableInterrupt(BATTERY_CHARGED_PIN, on_battery_wakeup, CHANGE);
 
-    pinMode(SWITCH_PIN, INPUT);
+    pinMode(SWITCH_PIN, INPUT_PULLUP);
     enableInterrupt(SWITCH_PIN, on_switch_wakeup, CHANGE);
 
 #ifdef DEBUG_LED
