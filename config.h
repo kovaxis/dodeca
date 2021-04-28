@@ -146,7 +146,7 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 
 // Whether to print current acceleration through serial, for calibration
 // purposes. Requires `DEBUG_SERIAL` defined in `config.h`.
-//#define DEBUG_PRINT_NORMALS
+#define DEBUG_PRINT_NORMALS
 
 // Whether to keep the status LED on while not sleeping, and on which pin.
 //#define DEBUG_LED LED_BUILTIN
@@ -209,12 +209,12 @@ const int FACE_COUNT = (NORMAL_COUNT * 2);
 // magnitude 1024.
 const PROGMEM Vec3<int> NORMALS[NORMAL_COUNT] = {
     // Orientation 0 (home)
-    {-5, -69, 1022},    // Average magnitude 1011.0287284212022
-    {274, -901, 402},   // Average magnitude 1039.5938404173132 (1074 from home)
-    {909, -72, 466},    // Average magnitude 1019.897079638824 (1070 from home)
-    {300, 832, 515},    // Average magnitude 994.2851347032802 (1078 from home)
-    {-744, 505, 489},   // Average magnitude 985.2690090439905 (1077 from home)
-    {-727, -577, 433},  // Average magnitude 1012.1631882607895 (1061 from home)
+    {1, -58, 1022},     // Average magnitude 1010.5370099050697
+    {-734, 523, 485},   // Average magnitude 984.2428484737808 (1080 from home)
+    {-733, -555, 450},  // Average magnitude 1015.6350350729143 (1055 from home)
+    {272, -887, 434},   // Average magnitude 1041.6752283444148 (1052 from home)
+    {919, -52, 449},    // Average magnitude 1017.0648170398144 (1082 from home)
+    {294, 840, 506},    // Average magnitude 988.2587257060746 (1076 from home)
 };
 
 const PROGMEM byte SCREEN_ORIENTATIONS[FACE_COUNT] = {
@@ -226,24 +226,17 @@ const PROGMEM byte SCREEN_ORIENTATIONS[FACE_COUNT] = {
     ORIENT_270,  // 252°
 
     ORIENT_000,  // Any
+    ORIENT_270,  // 288°
     ORIENT_000,  // 0°
     ORIENT_090,  // 72°
     ORIENT_135,  // 144°
     ORIENT_225,  // 216°
-    ORIENT_270,  // 288°
 };
 
 const PROGMEM int FACE_TIMES[FACE_COUNT] = {
-    0, 2,      10,     15,     20,     30,
+    0, 1 * 60,  2 * 60,  3 * 60,  5 * 60,  10 * 60,
 
-    0, 1 * 60, 2 * 60, 3 * 60, 4 * 60, 5 * 60,
-
-    /*0,
-    7*60,
-    10*60,
-    15*60,
-    20*60,
-    25*60,*/
+    0, 30 * 60, 45 * 60, 15 * 60, 20 * 60, 25 * 60,
 };
 
 #endif
