@@ -1,4 +1,5 @@
 
+#include <EEPROM.h>
 #include <EnableInterrupt.h>  // Library: "EnableInterrupt", v1.1.0
 #include <avr/power.h>
 
@@ -141,6 +142,28 @@ static void drawScreen(int seconds, bool show) {
 }
 
 BlueDot_BMA400 bma400 = BlueDot_BMA400(BMA400_ADDRESS);
+
+#ifdef DEBUG_STATS
+
+static int write_stats_at = -1;
+static int face_stats[FACE_COUNT];
+
+void write_stat(int face) {
+    EEPROM.write(DEBUG_STATS_ADDRESS + face * 2, face_stats[face] & 0xff);
+    EEPROM.write(DEBUG_STATS_ADDRESS + face * 2 + 1,
+                 (face_stats[face] >> 8) & 0xff);
+}
+
+void read_stats() {
+    for (int face = 0; face < FACE_COUNT; face++) {
+        int lo = EEPROM.read(DEBUG_STATS_ADDRESS + face * 2);
+        int hi = EEPROM.read(DEBUG_STATS_ADDRESS + face * 2 + 1);
+        int count = lo | hi << 8;
+        face_stats[face] = count;
+    }
+}
+
+#endif
 
 void setup() {
     // Switch off analog comparator
@@ -300,6 +323,47 @@ void setup() {
     // Note: both screens begin off (TODO: confirm, mearsuring consumption)
 
     dodecaToneSetup();
+
+#ifdef DEBUG_STATS
+
+    read_stats();
+#ifdef DEBUG_SERIAL
+    Serial.println(F("Face stats:"));
+    for (int face = 0; face < FACE_COUNT; face++) {
+        int time = pgm_read_word(FACE_TIMES + face);
+        Serial.print(F("  "));
+        if (time >= 60) {
+            Serial.print(time / 60);
+            Serial.print(F("m"));
+        }
+        if (time % 60 != 0) {
+            Serial.print(F(" "));
+            Serial.print(time % 60);
+            Serial.print(F("s"));
+        }
+        if (time == 0) {
+            Serial.print("Home face ");
+            Serial.print((face / NORMAL_COUNT) + 1);
+        }
+        Serial.print(F(": "));
+        Serial.print(face_stats[face]);
+        Serial.println(F(" times"));
+    }
+#endif
+    if (!digitalRead(SWITCH_PIN)) {
+        // Clear stats from EEPROM
+#ifdef DEBUG_SERIAL
+        Serial.println(F("Clearing EEPROM stats"));
+#endif
+        for (int face = 0; face < FACE_COUNT; face++) {
+            if (face_stats[face] != 0) {
+                face_stats[face] = 0;
+                write_stat(face);
+            }
+        }
+    }
+
+#endif
 }
 
 static void on_wakeup() {
@@ -565,11 +629,17 @@ static bool change_face(const Vec3<int> &acc) {
     int face_time = pgm_read_word(FACE_TIMES + active_normal);
     if (face_time == 0) {
         remaining_seconds = 0;
+#ifdef DEBUG_STATS
+        write_stats_at = 0;
+#endif
     } else {
         if (!ADDITIVE_FACES || remaining_seconds < 0) {
             remaining_seconds = 0;
         }
         remaining_seconds += face_time;
+#ifdef DEBUG_STATS
+        write_stats_at = remaining_seconds - DEBUG_STATS_MIN_TIME;
+#endif
     }
     timer_ref = Instant();
     bool play_facechange = true;
@@ -881,6 +951,19 @@ void loop() {
         Instant now = Instant();
         while (now.elapsed_since(timer_ref).gt(1000)) {
             remaining_seconds -= 1;
+#ifdef DEBUG_STATS
+            if (write_stats_at != -1 && remaining_seconds <= write_stats_at) {
+                face_stats[current_face] += 1;
+                write_stat(current_face);
+                write_stats_at = -1;
+#ifdef DEBUG_SERIAL
+                Serial.print(F("Stats for face "));
+                Serial.print(current_face);
+                Serial.print(F(" incremented to "));
+                Serial.println(face_stats[current_face]);
+#endif
+            }
+#endif
             if (remaining_seconds <= -10000) {
                 remaining_seconds = remaining_seconds % 10000;
             }

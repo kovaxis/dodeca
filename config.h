@@ -146,7 +146,7 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 
 // Whether to print current acceleration through serial, for calibration
 // purposes. Requires `DEBUG_SERIAL` defined in `config.h`.
-#define DEBUG_PRINT_NORMALS
+//#define DEBUG_PRINT_NORMALS
 
 // Whether to keep the status LED on while not sleeping, and on which pin.
 //#define DEBUG_LED LED_BUILTIN
@@ -154,6 +154,11 @@ const uint8_t DEBUG_HATCH_PATTERN2 = 0b01010101;
 // Whether to display the measured battery voltage on screen instead of the
 // current time.
 //#define DISPLAY_VOLTAGE_ON_SCREEN
+
+// Whether to keep track of how many times each face has been used.
+#define DEBUG_STATS
+const int DEBUG_STATS_MIN_TIME = 20;
+const int DEBUG_STATS_ADDRESS = 0;
 
 // ---- Battery settings ----
 
