@@ -146,21 +146,16 @@ BlueDot_BMA400 bma400 = BlueDot_BMA400(BMA400_ADDRESS);
 #ifdef DEBUG_STATS
 
 static int write_stats_at = -1;
-static int face_stats[FACE_COUNT];
 
-void write_stat(int face) {
-    EEPROM.write(DEBUG_STATS_ADDRESS + face * 2, face_stats[face] & 0xff);
-    EEPROM.write(DEBUG_STATS_ADDRESS + face * 2 + 1,
-                 (face_stats[face] >> 8) & 0xff);
+void write_stat(int face, int val) {
+    EEPROM.write(DEBUG_STATS_ADDRESS + face * 2, val & 0xff);
+    EEPROM.write(DEBUG_STATS_ADDRESS + face * 2 + 1, (val >> 8) & 0xff);
 }
 
-void read_stats() {
-    for (int face = 0; face < FACE_COUNT; face++) {
-        int lo = EEPROM.read(DEBUG_STATS_ADDRESS + face * 2);
-        int hi = EEPROM.read(DEBUG_STATS_ADDRESS + face * 2 + 1);
-        int count = lo | hi << 8;
-        face_stats[face] = count;
-    }
+int read_stat(int face) {
+    int lo = EEPROM.read(DEBUG_STATS_ADDRESS + face * 2);
+    int hi = EEPROM.read(DEBUG_STATS_ADDRESS + face * 2 + 1);
+    return lo | (hi << 8);
 }
 
 #endif
@@ -326,7 +321,6 @@ void setup() {
 
 #ifdef DEBUG_STATS
 
-    read_stats();
 #ifdef DEBUG_SERIAL
     Serial.println(F("Face stats:"));
     for (int face = 0; face < FACE_COUNT; face++) {
@@ -346,7 +340,7 @@ void setup() {
             Serial.print((face / NORMAL_COUNT) + 1);
         }
         Serial.print(F(": "));
-        Serial.print(face_stats[face]);
+        Serial.print(read_stat(face));
         Serial.println(F(" times"));
     }
 #endif
@@ -356,9 +350,8 @@ void setup() {
         Serial.println(F("Clearing EEPROM stats"));
 #endif
         for (int face = 0; face < FACE_COUNT; face++) {
-            if (face_stats[face] != 0) {
-                face_stats[face] = 0;
-                write_stat(face);
+            if (read_stat(face) != 0) {
+                write_stat(face, 0);
             }
         }
     }
@@ -953,14 +946,15 @@ void loop() {
             remaining_seconds -= 1;
 #ifdef DEBUG_STATS
             if (write_stats_at != -1 && remaining_seconds <= write_stats_at) {
-                face_stats[current_face] += 1;
-                write_stat(current_face);
+                int stat = read_stat(current_face);
+                stat += 1;
+                write_stat(current_face, stat);
                 write_stats_at = -1;
 #ifdef DEBUG_SERIAL
                 Serial.print(F("Stats for face "));
                 Serial.print(current_face);
                 Serial.print(F(" incremented to "));
-                Serial.println(face_stats[current_face]);
+                Serial.println(stat);
 #endif
             }
 #endif
