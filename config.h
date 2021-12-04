@@ -239,9 +239,9 @@ const PROGMEM byte SCREEN_ORIENTATIONS[FACE_COUNT] = {
 };
 
 const PROGMEM int FACE_TIMES[FACE_COUNT] = {
-    0, 1 * 60,  2 * 60,  3 * 60,  5 * 60,  10 * 60,
+    0, 1 * 60,  2 * 60,  3 * 60,  5 * 60,  7 * 60,
 
-    0, 30 * 60, 45 * 60, 15 * 60, 20 * 60, 25 * 60,
+    0, 30 * 60, 45 * 60, 10 * 60, 15 * 60, 20 * 60,
 };
 
 #endif
